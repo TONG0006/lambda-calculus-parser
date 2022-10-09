@@ -1,8 +1,10 @@
+{-# OPTIONS_GHC -Wno-typed-holes #-}
 module LambdaParser where
 
-import           Data.Builder ()
-import           Data.Lambda  (Lambda)
-import           Parser       (Parser)
+import           Data.Builder
+import           Data.Lambda
+import           LambdaHelperParser
+import           Parser
 
 -- You can add more imports if you need them
 
@@ -27,8 +29,23 @@ import           Parser       (Parser)
 --
 -- >>> parse longLambdaP "xx"
 -- UnexpectedChar 'x'
+--
+-- >>> parse longLambdaP "λx.xx"
+-- UnexpectedChar '\955'
+--
+-- >>> parse longLambdaP "(xx)"
+-- UnexpectedChar 'x'
+--
+-- >>> parse longLambdaP "(λx.x)(λy.y)(λz.z)"
+-- Result >< (\x.x)(\y.y)\z.z
+--
+-- >>> parse longLambdaP "(λx.x)λy.y(λz.z)"
+-- UnexpectedChar '\955'
+--
+-- >>> parse longLambdaP "(λx.x)xx"
+-- UnexpectedChar 'x'
 longLambdaP :: Parser Lambda
-longLambdaP = undefined
+longLambdaP = build <$> multLamExpr
 
 -- | Parses a string representing a lambda calculus expression in short form
 --
@@ -56,7 +73,7 @@ shortLambdaP = undefined
 -- >>> parse lambdaP "xx"
 -- UnexpectedChar 'x'
 lambdaP :: Parser Lambda
-lambdaP = undefined
+lambdaP = longLambdaP ||| shortLambdaP
 
 {-|
     Part 2
