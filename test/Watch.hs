@@ -1,10 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-} -- for FilePath literals
+{-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unused-do-bind #-}
 module Watch where
 
+import           Control.Concurrent (threadDelay)
+import           Control.Monad      (forever)
 import           System.FSNotify
-import           Control.Concurrent             ( threadDelay )
-import           Control.Monad                  ( forever )
 
+conf :: WatchConfig
 conf = WatchConfig { confDebounce     = Debounce 10
                    , confUsePolling   = True
                    , confPollInterval = 1000

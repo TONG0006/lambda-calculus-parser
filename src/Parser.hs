@@ -1,10 +1,10 @@
 -- | The simple Parser types.
 module Parser where
 
-import Control.Applicative hiding (some,many)
-import Control.Monad hiding (fail)
-import Data.Char
-import Prelude hiding (fail)
+import           Control.Applicative hiding (many, some)
+import           Control.Monad       hiding (fail)
+import           Data.Char
+import           Prelude             hiding (fail)
 
 -- | The input to a Parser.
 type Input = String

@@ -1,10 +1,10 @@
-import           System.FilePath.Glob           ( glob )
-import           Test.DocTest                   ( doctest )
-import           System.FSNotify
-import           Watch                          ( watch )
-import           System.Console.ANSI
-import           Control.Exception
 import           Control.Concurrent
+import           Control.Exception
+import           System.Console.ANSI
+import           System.FilePath.Glob (glob)
+import           System.FSNotify
+import           Test.DocTest         (doctest)
+import           Watch                (watch)
 
 resetScreen :: IO ()
 resetScreen = setSGR [Reset] >> clearScreen >> setCursorPosition 0 0

@@ -1,8 +1,8 @@
 module LambdaParser where
 
-import Parser
-import Data.Lambda
-import Data.Builder
+import           Data.Builder ()
+import           Data.Lambda  (Lambda)
+import           Parser       (Parser)
 
 -- You can add more imports if you need them
 
