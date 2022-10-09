@@ -140,7 +140,7 @@ type ShowLamDebug = String -- The context of unique variable names.
 
 -- | A very verbose show function for 'Lambda's which includes all brackets.
 --
--- Name clashes are handled by reassigning the second occourance to the first
+-- Name clashes are handled by reassigning the second occurrence to the first
 -- available name.
 --
 -- Missing names are displayed as an underscore followed by the index.
@@ -175,7 +175,7 @@ showsDebug l = recLambda recVar recAp recAbs recShow l []
 
 -- | A very verbose show function for 'Lambda's which includes all brackets.
 --
--- Name clashes are handled by reassigning the second occourance to the first
+-- Name clashes are handled by reassigning the second occurrence to the first
 -- available name.
 --
 -- Missing names are displayed as an underscore followed by the index.
