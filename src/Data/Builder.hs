@@ -1,4 +1,5 @@
-{-# LANGUAGE InstanceSigs,ScopedTypeVariables #-}
+{-# LANGUAGE InstanceSigs        #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Defines the 'Lambda' datatype and operations on it.
 module Data.Builder (
@@ -6,13 +7,13 @@ module Data.Builder (
   ,boolToLam,intToLam
   ) where
 
-import Control.Applicative
-import Data.Lambda
-import Data.List hiding (map)
-import Data.Maybe
-import Data.Bool
-import Data.Bifunctor
-import Prelude hiding (map)
+import           Control.Applicative
+import           Data.Bifunctor
+import           Data.Bool
+import           Data.Lambda
+import           Data.List           hiding (map)
+import           Data.Maybe
+import           Prelude             hiding (map)
 -- import Debug.Trace
 
 -- $setup
@@ -119,15 +120,15 @@ lamToBuilder = MkBuilder . const . Right
 -- *** Exception: The expression `(\y._1)` is malformed:
 --   Error: The expression contains a free variable `x`
 term :: Char -> Builder
-term c = MkBuilder $ (\vars -> let
-    -- | The failure result, indicating the number of variables by its index.
-    noVar = Left (hasFree,LamVar $ length vars)
+term c = MkBuilder (\vars -> let
+  -- | The failure result, indicating the number of variables by its index.
+  noVar = Left (hasFree,LamVar $ length vars)
   in maybe noVar (Right . LamVar) $ elemIndex c vars)
   where
     -- | Error message for free variables.
     hasFree :: ShowS
-    hasFree = (showString "  Error: The expression contains a free variable `"
-      . showChar c . showString "`")
+    hasFree = showString "  Error: The expression contains a free variable `"
+      . showChar c . showString "`"
 
 -- | Applies the first term to the second.
 --
@@ -155,7 +156,7 @@ ap (MkBuilder m) (MkBuilder n) = MkBuilder $ liftA2 merge m n
     merge (Right m')     (Right n')     = Right $ LamAp m' n'
     merge (Right m')     (Left n')      = Left $ LamAp m' <$> n'
     merge (Left m')      (Right n')     = Left $ (`LamAp` n') <$> m'
-    merge (Left (em,m')) (Left (en,n')) = Left $ (em . showChar '\n' . en,LamAp m' n')
+    merge (Left (em,m')) (Left (en,n')) = Left (em . showChar '\n' . en,LamAp m' n')
 
 -- | Applies the first term to the second.
 --
@@ -229,5 +230,5 @@ intToLam n
   where
     -- | Error message for negative numbers.
     isNeg :: ShowS
-    isNeg = (showString "  Error: The expression contains a negative number `"
-      . shows n . showString "`")
+    isNeg = showString "  Error: The expression contains a negative number `"
+      . shows n . showString "`"

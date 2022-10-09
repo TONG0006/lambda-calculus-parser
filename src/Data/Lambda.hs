@@ -1,4 +1,6 @@
-{-# LANGUAGE InstanceSigs,ScopedTypeVariables,TupleSections #-}
+{-# LANGUAGE InstanceSigs        #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 -- DO NOT DISABLE WARNINGS IN YOUR CODE
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
@@ -10,12 +12,12 @@ module Data.Lambda (
   ,lamToShowS,lamToString,lamToBool,lamToInt
   ) where
 
-import Control.Applicative
-import Data.List hiding (map)
-import Data.Maybe
-import Data.Bool
-import Prelude hiding (map)
-import GHC.Stack
+import           Control.Applicative
+import           Data.Bool
+import           Data.List           hiding (map)
+import           Data.Maybe
+import           GHC.Stack
+import           Prelude             hiding (map)
 -- import Debug.Trace
 
 -- $setup
@@ -202,7 +204,7 @@ recLambda recVar recAp recAbs recShow = go
     go l@(LamVar i)   = recVar l i
     go l@(LamAp m n)  = recAp l (rec m) $ rec n
     go l@(LamAbs c e) = recAbs l c $ rec e
-    go l@(LamShow f) = recShow l f
+    go l@(LamShow f)  = recShow l f
     -- | Recursive elimination of Lambdas.
     rec :: Lambda -> a
     rec = recLambda recVar recAp recAbs recShow
