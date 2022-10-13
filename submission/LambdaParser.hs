@@ -45,7 +45,7 @@ import           Parser
 -- >>> parse longLambdaP "(λx.x)xx"
 -- UnexpectedChar 'x'
 longLambdaP :: Parser Lambda
-longLambdaP = build <$> multLamExpr
+longLambdaP = build <$> multBrLamExpr
 
 -- | Parses a string representing a lambda calculus expression in short form
 --
@@ -61,7 +61,7 @@ longLambdaP = build <$> multLamExpr
 -- >>> parse shortLambdaP "(λx.x)(λy.yy)"
 -- Result >< (\x.x)\y.yy
 shortLambdaP :: Parser Lambda
-shortLambdaP = undefined
+shortLambdaP = build <$> multLamExpr
 
 -- | Parses a string representing a lambda calculus expression in short or long form
 -- >>> parse lambdaP "λx.xx"

@@ -35,7 +35,10 @@ varLamExpr :: Parser Builder
 varLamExpr = expr rawVarLamExpr
 
 multLamExpr :: Parser Builder
-multLamExpr = foldl1 ap <$> list1 brLamExpr
+multLamExpr = foldl1 ap <$> list1 varLamExpr
+
+multBrLamExpr :: Parser Builder
+multBrLamExpr = foldl1 ap <$> list1 brLamExpr
 
 multExpr :: Parser Builder
 multExpr = foldl1 ap <$> list1 varLamExpr
