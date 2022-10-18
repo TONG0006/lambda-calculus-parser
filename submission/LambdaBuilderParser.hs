@@ -27,7 +27,7 @@ import           Prelude             hiding (fail)
 --   Error: The expression contains a free variable `x`
 --   Error: The expression contains a free variable `y`
 variables :: Parser Builder
-variables = foldr1 ap <$> ((term <$>) <$> stringVariables)
+variables = foldl1 ap <$> ((term <$>) <$> stringVariables)
 
 longLambda :: Parser Builder
 longLambda = liftA2 lam longLambdaParameter longLambdaExpression
@@ -37,3 +37,13 @@ longLambdaTerms = variables ||| bracket variables ||| bracket longLambda
 
 longLambdaExpression :: Parser Builder
 longLambdaExpression = foldl1 ap <$> list1 longLambdaTerms
+
+
+shortLambda :: Parser Builder
+shortLambda = liftA2 (flip $ foldr lam) shortLambdaParameter shortLambdaExpression
+
+shortLambdaTerms :: Parser Builder
+shortLambdaTerms = variables ||| bracket variables ||| shortLambda ||| shortLambda
+
+shortLambdaExpression :: Parser Builder
+shortLambdaExpression = foldl1 ap <$> list1 shortLambdaTerms

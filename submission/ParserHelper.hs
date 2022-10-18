@@ -74,7 +74,7 @@ closeBracketToken = is ')' <* spaces
 bracket :: Parser a -> Parser a
 bracket = between openBracketToken closeBracketToken
 
--- | Parses a lambda parameter expression
+-- | Parses a long lambda parameter expression
 --
 -- >>> parse longLambdaParameter "λx.x"
 -- Result >x< 'x'
@@ -83,6 +83,18 @@ bracket = between openBracketToken closeBracketToken
 -- UnexpectedChar 'y'
 longLambdaParameter :: Parser Char
 longLambdaParameter = between lambdaToken dotToken charVariable
+
+-- | Parses a short lambda parameter expression
+--
+-- >>> parse shortLambdaParameter "λx.x"
+-- Result >x< 'x'
+--
+-- >>> parse shortLambdaParameter "λxyz.x"
+-- Result >x< "xyz"
+shortLambdaParameter :: Parser [Char]
+shortLambdaParameter = between lambdaToken dotToken (list1 charVariable)
+
+
 
 -- | List of valid variable chars
 validVariables :: [Char]
