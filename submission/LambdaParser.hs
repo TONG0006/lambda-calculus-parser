@@ -64,7 +64,7 @@ longLambdaP = build <$> longLambdaExpression
 -- >>> parse shortLambdaP "(λx.x)(λy.yy)"
 -- Result >< (\x.x)\y.yy
 shortLambdaP :: Parser Lambda
-shortLambdaP = build <$> multLamExpr
+shortLambdaP = undefined
 
 -- | Parses a string representing a lambda calculus expression in short or long form
 -- >>> parse lambdaP "λx.xx"
