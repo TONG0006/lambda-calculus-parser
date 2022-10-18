@@ -1,8 +1,10 @@
+{-# OPTIONS_GHC -Wno-typed-holes #-}
 module LambdaParser where
 
-import           Data.Builder ()
-import           Data.Lambda  (Lambda)
-import           Parser       (Parser)
+import           Data.Builder
+import           Data.Lambda
+import           LambdaBuilderParser
+import           Parser
 
 -- You can add more imports if you need them
 
@@ -22,13 +24,31 @@ import           Parser       (Parser)
 -- >>> parse longLambdaP "(λx.xx)"
 -- Result >< \x.xx
 --
+-- >>> parse longLambdaP "λx.xx"
+-- UnexpectedChar '\955'
+--
 -- >>> parse longLambdaP "(λx.(λy.xy(xx)))"
 -- Result >< \xy.xy(xx)
 --
--- >>> parse longLambdaP "xx"
--- UnexpectedChar 'x'
+-- >>> parse longLambdaP "(x)"
+-- Result >< *** Exception: The expression `_0` is malformed:
+--   Error: The expression contains a free variable `x`
+--
+-- >>> parse longLambdaP "x"
+-- Result >< *** Exception: The expression `_0` is malformed:
+--   Error: The expression contains a free variable `x`
+--
+-- >>> parse longLambdaP "(λx.x)(λy.y)(λz.z)"
+-- Result >< (\x.x)(\y.y)\z.z
+--
+-- >>> parse longLambdaP "(λx.x)λy.y(λz.z)"
+-- Result >λy.y(λz.z)< \x.x
+--
+-- >>> parse longLambdaP "(λx.x)x"
+-- Result >< *** Exception: The expression `((\x.x) _0)` is malformed:
+--   Error: The expression contains a free variable `x`
 longLambdaP :: Parser Lambda
-longLambdaP = undefined
+longLambdaP = build <$> longLambdaExpression
 
 -- | Parses a string representing a lambda calculus expression in short form
 --
@@ -44,7 +64,7 @@ longLambdaP = undefined
 -- >>> parse shortLambdaP "(λx.x)(λy.yy)"
 -- Result >< (\x.x)\y.yy
 shortLambdaP :: Parser Lambda
-shortLambdaP = undefined
+shortLambdaP = build <$> shortLambdaExpression
 
 -- | Parses a string representing a lambda calculus expression in short or long form
 -- >>> parse lambdaP "λx.xx"
@@ -56,7 +76,7 @@ shortLambdaP = undefined
 -- >>> parse lambdaP "xx"
 -- UnexpectedChar 'x'
 lambdaP :: Parser Lambda
-lambdaP = undefined
+lambdaP = longLambdaP ||| shortLambdaP
 
 {-|
     Part 2
