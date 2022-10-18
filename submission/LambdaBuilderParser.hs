@@ -43,7 +43,7 @@ shortLambda :: Parser Builder
 shortLambda = liftA2 (flip $ foldr lam) shortLambdaParameter shortLambdaExpression
 
 shortLambdaTerms :: Parser Builder
-shortLambdaTerms = variables ||| bracket variables ||| shortLambda ||| shortLambda
+shortLambdaTerms = variables ||| bracket variables ||| shortLambda ||| bracket shortLambda
 
 shortLambdaExpression :: Parser Builder
 shortLambdaExpression = foldl1 ap <$> list1 shortLambdaTerms
