@@ -27,8 +27,9 @@ library
       Data.Builder
       Data.Lambda
       Parser
-      LambdaHelperParser
+      LambdaBuilderParser
       LambdaParser
+      ParserHelper
   other-modules:
       Paths_2022Assignment2
   hs-source-dirs:
