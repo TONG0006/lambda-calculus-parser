@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 
 module LambdaBuilderParser where
+import           AdditionalParser
 import           Control.Applicative
 import           Data.Builder
 import           Parser
