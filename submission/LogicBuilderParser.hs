@@ -11,38 +11,26 @@ import           Parser
 import           Prelude             hiding (fail)
 
 logicalTrue :: Parser Builder
-logicalTrue = token (string "True") $> trueChurchEncoding
+logicalTrue = string "True" $> trueChurchEncoding
 
 logicalFalse :: Parser Builder
-logicalFalse = token (string "False") $> falseChurchEncoding
+logicalFalse = string "False" $> falseChurchEncoding
 
--- ifToken :: Parser Builder
--- ifToken = liftA3 ifBuilder (logicalTerm <* token (string "if")) logicalTerm logicalTerm
+logical :: Parser Builder
+logical = logicalTrue ||| logicalFalse
 
--- andToken :: Parser Builder
--- andToken = liftA2 andBuilder (logicalTerm <* token (string "and")) logicalTerm
+logicalOperator :: Parser Builder
+logicalOperator = logicalIf ||| logicalNot
 
--- orToken :: Parser Builder
--- orToken = liftA2 orBuilder (logicalTerm <* token (string "or")) logicalTerm
 
--- notToken :: Parser Builder
--- notToken = token (string "not") *> (notBuilder <$> logicalTerm)
+logicalTerm :: Parser Builder
+logicalTerm = logical ||| logicalOperator ||| bracket logicalExpression
 
-logicalValue :: Parser Builder
-logicalValue = logicalTrue ||| logicalFalse ||| logicalNot ||| bracket andOrToken
-
--- logicalOperators :: Parser Builder
--- logicalOperators = ifToken ||| notToken ||| andToken ||| orToken
-
--- logicalTerm :: Parser Builder
--- logicalTerm = bracket logicalOperators ||| logicalValue
-
--- logicalExpression :: Parser Builder
--- logicalExpression = foldr1 ap <$> list1 (logicalOperators ||| logicalTerm)
-
+logicalIf :: Parser Builder
+logicalIf = liftA3 ifBuilder (token (string "if") *> token logicalTerm) (token (string "then") *> token logicalTerm) (token (string "else") *> token logicalTerm)
 
 logicalNot :: Parser Builder
-logicalNot = token (string "not") *> (notBuilder <$> logicalValue)
+logicalNot = token1 (string "not") *> (notBuilder <$> logicalTerm)
 
 
 andToken :: Parser (Builder -> Builder -> Builder)
@@ -55,9 +43,5 @@ orToken = betweenSpace (string "or") $> orBuilder
 notToken :: Parser (Builder -> Builder)
 notToken = betweenSpace (string "not") $> notBuilder
 
-
--- orToken :: Parser (Builder -> Builder -> Builder)
--- orToken = chain logicalValue $ (spaces >> string "or" >> spaces) >> pure orBuilder
-
-andOrToken :: Parser Builder
-andOrToken = chain (chain logicalValue andToken) orToken
+logicalExpression :: Parser Builder
+logicalExpression = chain (chain logicalTerm andToken) orToken

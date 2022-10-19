@@ -5,6 +5,9 @@ module AdditionalParser where
 import           Parser
 import           Prelude hiding (fail)
 
+spaces1 :: Parser String
+spaces1 = list1 space
+
 -- | Parses a token, ignoring the spaces in front of it
 --
 -- >>> parse (token (is 'a')) "a bc"
@@ -14,6 +17,16 @@ import           Prelude hiding (fail)
 -- Result >bc< 'a'
 token :: Parser a -> Parser a
 token p = p <* spaces
+
+-- | Same as token but requires at least 1 space in front of it
+--
+-- >>> parse (token1 (is 'a')) "a bc"
+-- Result >bc< 'a'
+--
+-- >>> parse (token1 (is 'a')) "abc"
+-- UnexpectedChar 'b'
+token1 :: Parser a -> Parser a
+token1 p = p <* spaces1
 
 -- | Parses a char token
 --
@@ -71,7 +84,7 @@ chain p op = p >>= rest
 -- | Parses a parser in between spaces
 betweenSpace :: Parser a -> Parser a
 betweenSpace p = do
-    spaces
+    spaces1
     result <- p
-    spaces
+    spaces1
     return result
