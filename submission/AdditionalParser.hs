@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
+{-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module AdditionalParser where
 import           Parser
@@ -54,11 +55,23 @@ closeBracketToken = is ')' <* spaces
 bracket :: Parser a -> Parser a
 bracket = between openBracketToken closeBracketToken
 
--- | Parses the given string (fails otherwise).
---
--- >>> parse (string "hello") "hello bob"
--- Just (" bob","hello")
--- >>> parse (string "hey") "hello bob"
--- Nothing
-string :: String -> Parser String
-string = traverse is
+-- | `chain p op` parses 1 or more instances of `p` separated by `op`
+-- | (see chainl1 from Text.Parsec)
+-- | This can be a very useful parser combinator
+chain :: Parser a -> Parser (a -> a -> a) -> Parser a
+chain p op = p >>= rest
+  where
+    rest a =
+      (do
+        f <- op
+        b <- p
+        rest $ f a b
+      ) ||| pure a
+
+-- | Parses a parser in between spaces
+betweenSpace :: Parser a -> Parser a
+betweenSpace p = do
+    spaces
+    result <- p
+    spaces
+    return result
