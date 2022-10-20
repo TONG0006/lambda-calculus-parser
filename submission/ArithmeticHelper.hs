@@ -1,23 +1,7 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 module ArithmeticHelper where
 
-import           Data.Builder
-
--- | Add two church-encoded number (λmnfx.mf(nfx))
-addChurchEncoding :: Builder
-addChurchEncoding = lam 'm' $ lam 'n' $ lam 'f' $ lam 'x' $ term 'm' `ap` term 'f' `ap` (term 'n' `ap` term 'f' `ap` term 'x')
-
--- | Successor of a number, or in other words add one(λnfx.f(nfx))
-succChurchEncoding :: Builder
-succChurchEncoding = lam 'n' $ lam 'f' $ lam 'x' $ term 'f' `ap` (term 'n' `ap` term 'f' `ap` term 'x')
-
--- | Multiply two church-encoded number (λmnfx.m(nf)x))
-multChurchEncoding :: Builder
-multChurchEncoding = lam 'm' $ lam 'n' $ lam 'f' $ lam 'x' $ term 'm' `ap` (term 'n' `ap` term 'f') `ap` term 'x'
-
--- | Exponentiate two church-encoded number (λmn.nm)
-expChurchEncoding :: Builder
-expChurchEncoding = lam 'm' $ lam 'n' $ term 'n' `ap` term 'm'
+import           Data.Builder (Builder, ap, lam, term)
 
 -- | Predecessor of a number, or in other words minus one (λnfx.n(λgh.h(gf))(λu.x)(λu.u))
 predChurchEncoding :: Builder

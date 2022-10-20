@@ -3,11 +3,12 @@ module LambdaParser where
 
 import           ArithmeticParser    (arithmeticExpression,
                                       basicArithmeticExpression)
-import           Data.Builder
-import           Data.Lambda
-import           LambdaBuilderParser
+import           Data.Builder        (build)
+import           Data.Lambda         (Lambda, lamToBool, lamToInt)
+import           LambdaBuilderParser (longLambdaExpression,
+                                      shortLambdaExpression)
 import           LogicBuilderParser  (logicalExpression)
-import           Parser
+import           Parser              (Parser, parse, (|||))
 
 -- You can add more imports if you need them
 
@@ -77,7 +78,10 @@ shortLambdaP = build <$> shortLambdaExpression
 -- Result >< \x.xx
 --
 -- >>> parse lambdaP "x"
--- UnexpectedChar 'x'
+-- Result >< *** Exception: The expression `_0` is malformed:
+--   Error: The expression contains a free variable `x`
+
+
 lambdaP :: Parser Lambda
 lambdaP = longLambdaP ||| shortLambdaP
 
@@ -100,10 +104,10 @@ lambdaP = longLambdaP ||| shortLambdaP
 -- Result >< Just True
 --
 -- >>> parse logicP "True and"
--- Result >< (\xy.(\btf.btf)xy\_f.f)\t_.t
+-- Result > and< \xy.x
 --
 -- >>> parse logicP "not False"
--- Result >< (\x.(\btf.btf)x(\_f.f)\t_.t)\_f.f
+-- Result >< (\xy.y)(\xy.y)\xy.x
 --
 -- >>> lamToBool <$> parse logicP "if True and not False then True or True else False"
 -- Result >< Just True

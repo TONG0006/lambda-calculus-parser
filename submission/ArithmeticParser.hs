@@ -1,17 +1,18 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 module ArithmeticParser where
 
-import           AdditionalParser
-import           ArithmeticHelper
-import           Data.Builder
-import           Data.Functor
-import           Parser
+import           AdditionalParser (betweenSpaces, bracket, chain, int)
+import           ArithmeticHelper (addBuilder, expBuilder, minusBuilder,
+                                   multBuilder)
+import           Data.Builder     (Builder, intToLam)
+import           Data.Functor     (($>))
+import           Parser           (Parser, is, string, (|||))
 
 basicArithmeticPrecedence :: [Parser (Builder -> Builder -> Builder)]
-basicArithmeticPrecedence = [expLambda, multLambda, addLambda, minusLambda]
+basicArithmeticPrecedence = [addLambda ||| minusLambda]
 
 arithmeticPrecedence :: [Parser (Builder -> Builder -> Builder)]
-arithmeticPrecedence = [expLambda, multLambda, addLambda, minusLambda]
+arithmeticPrecedence = [expLambda, multLambda] ++ basicArithmeticPrecedence
 
 intLambda :: Parser Builder
 intLambda = intToLam <$> int
@@ -36,6 +37,3 @@ basicArithmeticExpression = foldl chain arithmeticTerm basicArithmeticPrecedence
 
 arithmeticExpression :: Parser Builder
 arithmeticExpression = foldl chain arithmeticTerm arithmeticPrecedence
-
--- expr :: Parser Builder
--- expr = chain term (add ||| minus)

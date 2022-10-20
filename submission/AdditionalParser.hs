@@ -2,7 +2,9 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module AdditionalParser where
-import           Parser
+import           Parser  (ParseError (UnexpectedChar, UnexpectedEof),
+                          ParseResult (Error, Result), Parser (P), between, is,
+                          list1, space, spaces, (|||))
 import           Prelude hiding (fail)
 
 spaces1 :: Parser String

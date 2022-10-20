@@ -1,12 +1,9 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 
-module ParserHelper where
-import           AdditionalParser
-import           Data.Builder
-import           Parser
+module LambdaHelper where
+import           AdditionalParser (token)
+import           Parser           (Parser, between, is, list1, oneof, spaces)
 import           Prelude          hiding (fail)
-
-
 
 -- | Parses a lambda token
 --

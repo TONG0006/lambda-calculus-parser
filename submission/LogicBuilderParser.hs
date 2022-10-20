@@ -2,12 +2,15 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module LogicBuilderParser where
-import           AdditionalParser
-import           Control.Applicative
-import           Data.Builder
-import           Data.Functor
-import           LogicHelper
-import           Parser
+import           AdditionalParser    (betweenSpaces1, bracket, chain, token,
+                                      token1)
+import           Control.Applicative (liftA3)
+import           Data.Builder        (Builder)
+import           Data.Functor        (($>))
+import           LogicHelper         (andBuilder, falseChurchEncoding,
+                                      ifBuilder, notBuilder, orBuilder,
+                                      trueChurchEncoding)
+import           Parser              (Parser, string, (|||))
 import           Prelude             hiding (fail)
 
 logicalPrecedence :: [Parser (Builder -> Builder -> Builder)]

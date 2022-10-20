@@ -1,11 +1,12 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 
 module LambdaBuilderParser where
-import           AdditionalParser
-import           Control.Applicative
-import           Data.Builder
-import           Parser
-import           ParserHelper
+import           AdditionalParser    (bracket)
+import           Control.Applicative (Applicative (liftA2))
+import           Data.Builder        (Builder, ap, lam, term)
+import           LambdaHelper        (longLambdaParameter, shortLambdaParameter,
+                                      stringVariables)
+import           Parser              (Parser, list1, (|||))
 import           Prelude             hiding (fail)
 
 -- | Parses a sequence of variables
