@@ -22,11 +22,14 @@ addLambda = betweenSpaces (is '+') $> addBuilder
 minusLambda :: Parser (Builder -> Builder -> Builder)
 minusLambda = betweenSpaces (is '-') $> minusBuilder
 
+arithmeticTerm :: Parser Builder
+arithmeticTerm = intLambda ||| bracket arithmeticExpression
+
 basicArithmeticExpression :: Parser Builder
-basicArithmeticExpression = chain intLambda (addLambda ||| minusLambda)
+basicArithmeticExpression = chain arithmeticTerm (addLambda ||| minusLambda)
 
 arithmeticExpression :: Parser Builder
-arithmeticExpression = chain (chain (chain intLambda expLambda) multLambda) (addLambda ||| minusLambda)
+arithmeticExpression = chain (chain (chain arithmeticTerm expLambda) multLambda) (addLambda ||| minusLambda)
 
 -- expr :: Parser Builder
 -- expr = chain term (add ||| minus)
