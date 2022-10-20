@@ -141,10 +141,8 @@ binaryToken str = ($>) (betweenSpaces $ string str)
 binaryToken1 :: String -> a -> Parser a
 binaryToken1 str = ($>) (betweenSpaces1 $ string str)
 
-
 ternaryToken1 :: (a -> b -> c -> d) -> (String, Parser a) -> (String, Parser b) -> (String, Parser c) -> Parser d
-ternaryToken1 joiner (str1, parser1) (str2, parser2) (str3, parser3) = liftA3 joiner x y z
-    where
-        x = unaryToken1 str1 parser1
-        y = unaryToken1 str2 parser2
-        z = unaryToken1 str3 parser3
+ternaryToken1 joiner (strA, parserA) (strB, parserB) (strC, parserC) = liftA3 joiner
+    (unaryToken1 strA parserA)
+    (unaryToken1 strB parserB)
+    (unaryToken1 strC parserC)
