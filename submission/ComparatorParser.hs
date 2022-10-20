@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 
 module ComparatorParser where
-import           AdditionalParser (betweenSpaces)
-import           ComparatorHelper (leqBuilder)
+import           AdditionalParser (binaryToken)
+import           ComparatorHelper (eqBuilder, geqBuilder, gtBuilder, leqBuilder,
+                                   ltBuilder, neqBuilder)
 import           Data.Builder     (Builder)
-import           Data.Functor     (($>))
-import           Parser           (Parser, is, string)
+import           Parser           (Parser)
 import           Prelude          hiding (fail)
 
 -- basicArithmeticPrecedence :: [Parser (Builder -> Builder -> Builder)]
@@ -41,21 +41,21 @@ import           Prelude          hiding (fail)
 -- comparatorPrecedence = []
 
 leqLambda :: Parser (Builder -> Builder -> Builder)
-leqLambda = betweenSpaces (string "<=") $> leqBuilder
+leqLambda = binaryToken "<=" leqBuilder
 
 geqLambda :: Parser (Builder -> Builder -> Builder)
-geqLambda = betweenSpaces (string ">=") $> leqBuilder
+geqLambda = binaryToken ">=" geqBuilder
 
 ltLambda :: Parser (Builder -> Builder -> Builder)
-ltLambda = betweenSpaces (is '<') $> leqBuilder
+ltLambda = binaryToken "<" ltBuilder
 
 gtLambda :: Parser (Builder -> Builder -> Builder)
-gtLambda = betweenSpaces (is '>') $> leqBuilder
+gtLambda = binaryToken ">" gtBuilder
 
 eqLambda :: Parser (Builder -> Builder -> Builder)
-eqLambda = betweenSpaces (string "==") $> leqBuilder
+eqLambda = binaryToken "==" eqBuilder
 
 neqLambda :: Parser (Builder -> Builder -> Builder)
-neqLambda = betweenSpaces (string "!=") $> leqBuilder
+neqLambda = binaryToken "!=" neqBuilder
 
 -- comparatorExpression = foldl chain

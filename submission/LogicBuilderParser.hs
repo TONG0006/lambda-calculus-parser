@@ -2,15 +2,13 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module LogicBuilderParser where
-import           AdditionalParser    (binaryToken1, bracket, chain, constToken,
-                                      token1, unaryToken1)
-import           Control.Applicative (liftA3)
-import           Data.Builder        (Builder)
-import           LogicHelper         (andBuilder, falseChurchEncoding,
-                                      ifBuilder, notBuilder, orBuilder,
-                                      trueChurchEncoding)
-import           Parser              (Parser, (|||))
-import           Prelude             hiding (fail)
+import           AdditionalParser (binaryToken1, bracket, chain, constToken,
+                                   ternaryToken1, token1, unaryToken1)
+import           Data.Builder     (Builder)
+import           LogicHelper      (andBuilder, falseChurchEncoding, ifBuilder,
+                                   notBuilder, orBuilder, trueChurchEncoding)
+import           Parser           (Parser, (|||))
+import           Prelude          hiding (fail)
 
 logicalTrue :: Parser Builder
 logicalTrue = constToken "True" trueChurchEncoding
@@ -21,17 +19,11 @@ logicalFalse = constToken "False" falseChurchEncoding
 logical :: Parser Builder
 logical = logicalTrue ||| logicalFalse
 
-ifToken :: Parser Builder
-ifToken = unaryToken1 "if" $ token1 logicalExpression
-
-thenToken :: Parser Builder
-thenToken = unaryToken1 "then" $ token1 logicalExpression
-
-elseToken :: Parser Builder
-elseToken = unaryToken1 "else" logicalExpression
-
 logicalIf :: Parser Builder
-logicalIf = liftA3 ifBuilder ifToken thenToken elseToken
+logicalIf = ternaryToken1 ifBuilder
+    ("if", token1 logicalExpression)
+    ("then", token1 logicalExpression)
+    ("else", logicalExpression)
 
 logicalNot :: Parser Builder
 logicalNot = unaryToken1 "not" $ notBuilder <$> logicalTerm
