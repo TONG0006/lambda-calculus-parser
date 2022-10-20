@@ -2,10 +2,11 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module AdditionalParser where
-import           Parser  (ParseError (UnexpectedChar, UnexpectedEof),
-                          ParseResult (Error, Result), Parser (P), between, is,
-                          list1, space, spaces, (|||))
-import           Prelude hiding (fail)
+import           Data.Functor (($>))
+import           Parser       (ParseError (UnexpectedChar, UnexpectedEof),
+                               ParseResult (Error, Result), Parser (P), between,
+                               is, list1, space, spaces, string, (|||))
+import           Prelude      hiding (fail)
 
 spaces1 :: Parser String
 spaces1 = list1 space
@@ -122,3 +123,18 @@ int = P f
   f x  = case readInt x of
     Just (v, rest) -> Result rest v
     Nothing        -> Error $ UnexpectedChar (head x)
+
+constToken :: String -> a -> Parser a
+constToken str = ($>) $ string str
+
+unaryToken :: String -> Parser b -> Parser b
+unaryToken str = (*>) $ token (string str)
+
+unaryToken1 :: String -> Parser b -> Parser b
+unaryToken1 str = (*>) $ token1 (string str)
+
+binaryToken :: String -> a -> Parser a
+binaryToken str = ($>) (betweenSpaces $ string str)
+
+binaryToken1 :: String -> a -> Parser a
+binaryToken1 str = ($>) (betweenSpaces1 $ string str)
