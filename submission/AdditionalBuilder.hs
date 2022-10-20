@@ -8,3 +8,6 @@ import           Prelude      hiding (fail)
 
 ap3 :: Builder -> Builder -> Builder -> Builder
 ap3 b t f = b `ap` t `ap` f
+
+ap4 :: Builder -> Builder -> Builder -> Builder -> Builder
+ap4 a b c d = a `ap` b `ap` c `ap` d
