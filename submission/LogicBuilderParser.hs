@@ -2,62 +2,46 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module LogicBuilderParser where
-import           AdditionalParser    (betweenSpaces1, bracket, chain, token,
-                                      token1)
-import           Control.Applicative (liftA3)
-import           Data.Builder        (Builder)
-import           Data.Functor        (($>))
-import           LogicHelper         (andBuilder, falseChurchEncoding,
-                                      ifBuilder, notBuilder, orBuilder,
-                                      trueChurchEncoding)
-import           Parser              (Parser, string, (|||))
-import           Prelude             hiding (fail)
-
-logicalPrecedence :: [Parser (Builder -> Builder -> Builder)]
-logicalPrecedence = [andToken, orToken]
-
-ifToken :: Parser Builder
-ifToken = token (string "if") *> token logicalExpression
-
-thenToken :: Parser Builder
-thenToken = token (string "then") *> token logicalExpression
-
-elseToken :: Parser Builder
-elseToken = token (string "else") *> token logicalExpression
-
+import           AdditionalParser (binaryToken1, bracket, chain, constToken,
+                                   ternaryToken1, token1, unaryToken1)
+import           Data.Builder     (Builder)
+import           LogicHelper      (andBuilder, falseChurchEncoding, ifBuilder,
+                                   notBuilder, orBuilder, trueChurchEncoding)
+import           Parser           (Parser, (|||))
+import           Prelude          hiding (fail)
 
 logicalTrue :: Parser Builder
-logicalTrue = string "True" $> trueChurchEncoding
+logicalTrue = constToken "True" trueChurchEncoding
 
 logicalFalse :: Parser Builder
-logicalFalse = string "False" $> falseChurchEncoding
+logicalFalse = constToken "False" falseChurchEncoding
 
 logical :: Parser Builder
 logical = logicalTrue ||| logicalFalse
 
+logicalIf :: Parser Builder
+logicalIf = ternaryToken1 ifBuilder
+    ("if", token1 logicalExpression)
+    ("then", token1 logicalExpression)
+    ("else", logicalExpression)
+
+logicalNot :: Parser Builder
+logicalNot = unaryToken1 "not" $ notBuilder <$> logicalTerm
+
 logicalOperator :: Parser Builder
 logicalOperator = logicalIf ||| logicalNot
-
 
 logicalTerm :: Parser Builder
 logicalTerm = logical ||| logicalOperator ||| bracket logicalExpression
 
-logicalIf :: Parser Builder
-logicalIf = liftA3 ifBuilder ifToken thenToken elseToken
-
-logicalNot :: Parser Builder
-logicalNot = token1 (string "not") *> (notBuilder <$> logicalTerm)
-
-
 andToken :: Parser (Builder -> Builder -> Builder)
-andToken = betweenSpaces1 (string "and") $> andBuilder
+andToken = binaryToken1 "and" andBuilder
 
 orToken :: Parser (Builder -> Builder -> Builder)
-orToken = betweenSpaces1 (string "or") $> orBuilder
+orToken = binaryToken1 "or" orBuilder
 
-
-notToken :: Parser (Builder -> Builder)
-notToken = betweenSpaces1 (string "not") $> notBuilder
+logicalPrecedence :: [Parser (Builder -> Builder -> Builder)]
+logicalPrecedence = [andToken, orToken]
 
 logicalExpression :: Parser Builder
 logicalExpression = foldl chain logicalTerm logicalPrecedence

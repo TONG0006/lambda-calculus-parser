@@ -2,10 +2,13 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module AdditionalParser where
-import           Parser  (ParseError (UnexpectedChar, UnexpectedEof),
-                          ParseResult (Error, Result), Parser (P), between, is,
-                          list1, space, spaces, (|||))
-import           Prelude hiding (fail)
+import           Control.Applicative (liftA3)
+import           Data.Functor        (($>))
+import           Parser              (ParseError (UnexpectedChar, UnexpectedEof),
+                                      ParseResult (Error, Result), Parser (P),
+                                      between, is, list1, space, spaces, string,
+                                      (|||))
+import           Prelude             hiding (fail)
 
 spaces1 :: Parser String
 spaces1 = list1 space
@@ -122,3 +125,24 @@ int = P f
   f x  = case readInt x of
     Just (v, rest) -> Result rest v
     Nothing        -> Error $ UnexpectedChar (head x)
+
+constToken :: String -> a -> Parser a
+constToken str = ($>) $ string str
+
+unaryToken :: String -> Parser b -> Parser b
+unaryToken str = (*>) $ token (string str)
+
+unaryToken1 :: String -> Parser b -> Parser b
+unaryToken1 str = (*>) $ token1 (string str)
+
+binaryToken :: String -> a -> Parser a
+binaryToken str = ($>) (betweenSpaces $ string str)
+
+binaryToken1 :: String -> a -> Parser a
+binaryToken1 str = ($>) (betweenSpaces1 $ string str)
+
+ternaryToken1 :: (a -> b -> c -> d) -> (String, Parser a) -> (String, Parser b) -> (String, Parser c) -> Parser d
+ternaryToken1 joiner (strA, parserA) (strB, parserB) (strC, parserC) = liftA3 joiner
+    (unaryToken1 strA parserA)
+    (unaryToken1 strB parserB)
+    (unaryToken1 strC parserC)

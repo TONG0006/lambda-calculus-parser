@@ -1,12 +1,11 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 module ArithmeticParser where
 
-import           AdditionalParser (betweenSpaces, bracket, chain, int)
+import           AdditionalParser (binaryToken, bracket, chain, int)
 import           ArithmeticHelper (addBuilder, expBuilder, minusBuilder,
                                    multBuilder)
 import           Data.Builder     (Builder, intToLam)
-import           Data.Functor     (($>))
-import           Parser           (Parser, is, string, (|||))
+import           Parser           (Parser, (|||))
 
 basicArithmeticPrecedence :: [Parser (Builder -> Builder -> Builder)]
 basicArithmeticPrecedence = [addLambda ||| minusLambda]
@@ -18,16 +17,16 @@ intLambda :: Parser Builder
 intLambda = intToLam <$> int
 
 expLambda :: Parser (Builder -> Builder -> Builder)
-expLambda = betweenSpaces (string "**") $> expBuilder
+expLambda = binaryToken "**" expBuilder
 
 multLambda :: Parser (Builder -> Builder -> Builder)
-multLambda = betweenSpaces (is '*') $> multBuilder
+multLambda = binaryToken "*" multBuilder
 
 addLambda :: Parser (Builder -> Builder -> Builder)
-addLambda = betweenSpaces (is '+') $> addBuilder
+addLambda = binaryToken "+" addBuilder
 
 minusLambda :: Parser (Builder -> Builder -> Builder)
-minusLambda = betweenSpaces (is '-') $> minusBuilder
+minusLambda = binaryToken "-" minusBuilder
 
 arithmeticTerm :: Parser Builder
 arithmeticTerm = intLambda ||| bracket arithmeticExpression

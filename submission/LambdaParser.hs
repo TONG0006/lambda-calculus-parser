@@ -3,6 +3,7 @@ module LambdaParser where
 
 import           ArithmeticParser    (arithmeticExpression,
                                       basicArithmeticExpression)
+import           ComparatorParser    (comparatorExpression)
 import           Data.Builder        (build)
 import           Data.Lambda         (Lambda, lamToBool, lamToInt)
 import           LambdaBuilderParser (longLambdaExpression,
@@ -166,7 +167,7 @@ arithmeticP = build <$> arithmeticExpression
 -- >>> lamToBool <$> parse complexCalcP "15 - 2 * 2 != 2**3 + 3 or 5 * 3 + 1 < 9"
 -- Result >< Just False
 complexCalcP :: Parser Lambda
-complexCalcP = undefined
+complexCalcP = build <$> comparatorExpression
 
 
 {-|
