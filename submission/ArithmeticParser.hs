@@ -7,6 +7,12 @@ import           Data.Builder
 import           Data.Functor
 import           Parser
 
+basicArithmeticPrecedence :: [Parser (Builder -> Builder -> Builder)]
+basicArithmeticPrecedence = [expLambda, multLambda, addLambda, minusLambda]
+
+arithmeticPrecedence :: [Parser (Builder -> Builder -> Builder)]
+arithmeticPrecedence = [expLambda, multLambda, addLambda, minusLambda]
+
 intLambda :: Parser Builder
 intLambda = intToLam <$> int
 
@@ -26,10 +32,10 @@ arithmeticTerm :: Parser Builder
 arithmeticTerm = intLambda ||| bracket arithmeticExpression
 
 basicArithmeticExpression :: Parser Builder
-basicArithmeticExpression = chain arithmeticTerm (addLambda ||| minusLambda)
+basicArithmeticExpression = foldl chain arithmeticTerm basicArithmeticPrecedence
 
 arithmeticExpression :: Parser Builder
-arithmeticExpression = chain (chain (chain arithmeticTerm expLambda) multLambda) (addLambda ||| minusLambda)
+arithmeticExpression = foldl chain arithmeticTerm arithmeticPrecedence
 
 -- expr :: Parser Builder
 -- expr = chain term (add ||| minus)

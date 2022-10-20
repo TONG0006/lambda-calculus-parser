@@ -10,6 +10,9 @@ import           LogicHelper
 import           Parser
 import           Prelude             hiding (fail)
 
+logicalPrecedence :: [Parser (Builder -> Builder -> Builder)]
+logicalPrecedence = [andToken, orToken]
+
 ifToken :: Parser Builder
 ifToken = token (string "if") *> token logicalExpression
 
@@ -54,4 +57,4 @@ notToken :: Parser (Builder -> Builder)
 notToken = betweenSpaces1 (string "not") $> notBuilder
 
 logicalExpression :: Parser Builder
-logicalExpression = chain (chain logicalTerm andToken) orToken
+logicalExpression = foldl chain logicalTerm logicalPrecedence

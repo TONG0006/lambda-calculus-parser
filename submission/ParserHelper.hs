@@ -2,6 +2,7 @@
 
 module ParserHelper where
 import           AdditionalParser
+import           Data.Builder
 import           Parser
 import           Prelude          hiding (fail)
 
@@ -79,7 +80,7 @@ charVariable = token $ oneof validVariables
 -- Result >< "x"
 --
 -- >>> parse stringVariables "x "
--- Result >< "x"
+-- Result >< "x￼"
 --
 -- >>> parse stringVariables "xyz"
 -- Result >< "xyz"
