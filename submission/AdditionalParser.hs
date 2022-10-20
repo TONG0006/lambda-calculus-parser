@@ -96,3 +96,27 @@ betweenSpaces1 p = do
     result <- p
     spaces1
     return result
+
+readInt :: String -> Maybe (Int, String)
+readInt s = case reads s of
+  [(x, rest)] -> Just (x, rest)
+  _           -> Nothing
+
+-- | Parse numbers as int until non-digit
+--
+---- >>> parse int "abc"
+-- Result >bc< 'a'
+--
+-- >>> isErrorResult (parse int "")
+-- True
+--
+-- >>> isErrorResult (parse int "a")
+-- True
+int :: Parser Int
+int = P f
+ where
+  -- This is okay because the case statement is small
+  f "" = Error UnexpectedEof
+  f x  = case readInt x of
+    Just (v, rest) -> Result rest v
+    Nothing        -> Error $ UnexpectedChar (head x)

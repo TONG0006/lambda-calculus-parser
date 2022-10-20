@@ -28,6 +28,8 @@ library
       Data.Lambda
       Parser
       AdditionalParser
+      ArithmeticHelper
+      ArithmeticParser
       LambdaBuilderParser
       LambdaParser
       LogicBuilderParser

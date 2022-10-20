@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 module LambdaParser where
 
+import           ArithmeticParser    (arithmeticExpression,
+                                      basicArithmeticExpression)
 import           Data.Builder
 import           Data.Lambda
 import           LambdaBuilderParser
@@ -132,7 +134,7 @@ logicP = build <$> logicalExpression
 -- >>> lamToInt <$> parse basicArithmeticP "5 + 9 - 3 + 2"
 -- Result >< Just 13
 basicArithmeticP :: Parser Lambda
-basicArithmeticP = undefined
+basicArithmeticP = build <$> basicArithmeticExpression
 
 -- | Parse arithmetic expressions involving + - * ** () and natural numbers into lambda calculus
 -- >>> lamToInt <$> parse arithmeticP "5 + 9 * 3 - 2**3"
@@ -141,7 +143,7 @@ basicArithmeticP = undefined
 -- >>> lamToInt <$> parse arithmeticP "100 - 4 * 2**(4-1)"
 -- Result >< Just 68
 arithmeticP :: Parser Lambda
-arithmeticP = undefined
+arithmeticP = build <$> arithmeticExpression
 
 
 -- | Exercise 3
