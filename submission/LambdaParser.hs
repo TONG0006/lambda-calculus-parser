@@ -8,6 +8,7 @@ import           Data.Builder        (build)
 import           Data.Lambda         (Lambda, lamToBool, lamToInt)
 import           LambdaBuilderParser (longLambdaExpression,
                                       shortLambdaExpression)
+import           ListParser          (listExpression, listToken)
 import           LogicBuilderParser  (logicalExpression)
 import           Parser              (Parser, parse, (|||))
 
@@ -187,15 +188,15 @@ complexCalcP = build <$> comparatorExpression
 -- Result >< \cn.n
 --
 -- >>> parse listP "[True]"
--- Result >< (\htcn.ch(tcn))(\xy.x)\cn.n
+-- Result >< \cn.c(\xy.x)((\ab.b)cn)
 --
 -- >>> parse listP "[0, 0]"
--- Result >< (\htcn.ch(tcn))(\fx.x)((\htcn.ch(tcn))(\fx.x)\cn.n)
+-- Result >< \cn.c(\fx.x)((\ab.a(\fx.x)((\de.e)ab))cn)
 --
 -- >>> parse listP "[0, 0"
 -- UnexpectedEof
 listP :: Parser Lambda
-listP = undefined
+listP = build <$> listToken
 
 -- >>> lamToBool <$> parse listOpP "head [True, False, True, False, False]"
 -- Result >< Just True
@@ -209,7 +210,7 @@ listP = undefined
 -- >>> lamToBool <$> parse listOpP "isNull [1, 2, 3]"
 -- Result >< Just False
 listOpP :: Parser Lambda
-listOpP = undefined
+listOpP = build <$> listExpression
 
 
 -- | Exercise 2

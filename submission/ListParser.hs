@@ -1,30 +1,74 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 
 module ListParser where
-import           AdditionalBuilder (ap3, ap4)
-import           Data.Builder      (Builder, ap, lam, term)
-import           LogicHelper       (falseChurchEncoding, trueChurchEncoding)
-import           Prelude           hiding (fail)
+import           AdditionalParser   (array, chain, unaryToken1)
+import           ArithmeticParser   (intLambda)
+import           Data.Builder       (Builder)
+import           ListHelper         (consBuilder, headBuilder, isNullBuilder,
+                                     nullBuilder, tailBuilder)
+import           LogicBuilderParser (logicalTerm)
+import           Parser             (Parser, (|||))
+import           Prelude            hiding (fail)
 
--- | The church encoding for list constructs are given below
--- | [] = null = λcn.n
--- | isNull = λl.l(λht.False) True
--- | cons = λhtcn.ch(tcn)
--- | head = λl.l(λht.h) False
--- | tail = λlcn.l(λhtg.gh(tc))(λt.n)(λht.t)
+-- logicalTrue :: Parser Builder
+-- logicalTrue = constToken "True" trueChurchEncoding
 
--- null list (λcn.n)
-nullBuilder :: Builder
-nullBuilder = lam 'c' $ lam 'n' $ term 'n'
+-- logicalFalse :: Parser Builder
+-- logicalFalse = constToken "False" falseChurchEncoding
 
-isNullBuilder :: Builder -> Builder
-isNullBuilder l = ap3 l (lam 'h' $ lam 't' falseChurchEncoding) trueChurchEncoding
+-- logical :: Parser Builder
+-- logical = logicalTrue ||| logicalFalse
 
-consBuilder :: Builder -> Builder -> Builder
-consBuilder h t = lam 'c' $ lam 'n' $ ap3 (term 'c') h $ ap3 t (term 'c') (term 'n')
+-- logicalIf :: Parser Builder
+-- logicalIf = ternaryToken1 ifBuilder
+--     ("if", token1 logicalExpression)
+--     ("then", token1 logicalExpression)
+--     ("else", logicalExpression)
 
-headBuilder :: Builder -> Builder
-headBuilder l = ap3 l (lam 'h' $ lam 't' $ term 't') falseChurchEncoding
+-- logicalNot :: Parser Builder
+-- logicalNot = unaryToken1 "not" $ notBuilder <$> logicalTerm
 
-tailBuilder :: Builder -> Builder
-tailBuilder l = lam 'c' $ lam 'n' $ ap4 l (lam 'h' $ lam 't' $ lam 'g' $ ap3 (term 'g') (term 'h') (term 't' `ap` term 'c')) (lam 't' $ term 'n') (lam 'h' $ lam 't' $ term 't')
+-- logicalOperator :: Parser Builder
+-- logicalOperator = logicalIf ||| logicalNot
+
+-- logicalTerm :: Parser Builder
+-- logicalTerm = logical ||| logicalOperator ||| bracket logicalExpression
+
+-- andToken :: Parser (Builder -> Builder -> Builder)
+-- andToken = binaryToken1 "and" andBuilder
+
+-- orToken :: Parser (Builder -> Builder -> Builder)
+-- orToken = binaryToken1 "or" orBuilder
+
+-- logicalPrecedence :: [Parser (Builder -> Builder -> Builder)]
+-- logicalPrecedence = [andToken, orToken]
+
+-- logicalExpression :: Parser Builder
+-- logicalExpression = foldl chain logicalTerm logicalPrecedence
+
+consToken :: Parser Builder
+consToken = foldr consBuilder nullBuilder <$> array datatypeTerm
+
+headToken :: Parser Builder
+headToken = unaryToken1 "head" $ headBuilder <$> listToken
+
+tailToken :: Parser Builder
+tailToken = unaryToken1 "rest" $ tailBuilder <$> listToken
+
+isNullToken :: Parser Builder
+isNullToken = unaryToken1 "isNull" $ isNullBuilder <$> listToken
+
+listToken :: Parser Builder
+listToken = tailToken ||| consToken
+
+listOperator :: Parser Builder
+listOperator = listToken ||| headToken ||| isNullToken
+
+listPrecedence :: [Parser (Builder -> Builder -> Builder)]
+listPrecedence = []
+
+datatypeTerm :: Parser Builder
+datatypeTerm = intLambda ||| logicalTerm
+
+listExpression :: Parser Builder
+listExpression = foldl chain listOperator listPrecedence
