@@ -102,9 +102,12 @@ lambdaP = longLambdaP ||| shortLambdaP
 --
 -- >>> parse logicP "not False"
 -- Result >< (\x.(\btf.btf)x(\_f.f)\t_.t)\_f.f
--- >>> lamToBool <$> parse logicP "if (True and not False) then (True or True) else False"
+--
+-- >>> lamToBool <$> parse logicP "if True and not False then True or True else False"
 -- Result >< Just True
-
+--
+-- >>> lamToBool <$> parse logicP "if False then True else True and if True then False else False"
+-- Result >< Just False
 logicP :: Parser Lambda
 logicP = build <$> logicalExpression
 

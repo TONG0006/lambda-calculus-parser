@@ -10,6 +10,16 @@ import           LogicHelper
 import           Parser
 import           Prelude             hiding (fail)
 
+ifToken :: Parser Builder
+ifToken = token (string "if") *> token logicalExpression
+
+thenToken :: Parser Builder
+thenToken = token (string "then") *> token logicalExpression
+
+elseToken :: Parser Builder
+elseToken = token (string "else") *> token logicalExpression
+
+
 logicalTrue :: Parser Builder
 logicalTrue = string "True" $> trueChurchEncoding
 
@@ -27,21 +37,21 @@ logicalTerm :: Parser Builder
 logicalTerm = logical ||| logicalOperator ||| bracket logicalExpression
 
 logicalIf :: Parser Builder
-logicalIf = liftA3 ifBuilder (token (string "if") *> token logicalTerm) (token (string "then") *> token logicalTerm) (token (string "else") *> token logicalTerm)
+logicalIf = liftA3 ifBuilder ifToken thenToken elseToken
 
 logicalNot :: Parser Builder
 logicalNot = token1 (string "not") *> (notBuilder <$> logicalTerm)
 
 
 andToken :: Parser (Builder -> Builder -> Builder)
-andToken = betweenSpace (string "and") $> andBuilder
+andToken = betweenSpaces1 (string "and") $> andBuilder
 
 orToken :: Parser (Builder -> Builder -> Builder)
-orToken = betweenSpace (string "or") $> orBuilder
+orToken = betweenSpaces1 (string "or") $> orBuilder
 
 
 notToken :: Parser (Builder -> Builder)
-notToken = betweenSpace (string "not") $> notBuilder
+notToken = betweenSpaces1 (string "not") $> notBuilder
 
 logicalExpression :: Parser Builder
 logicalExpression = chain (chain logicalTerm andToken) orToken

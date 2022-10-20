@@ -82,8 +82,16 @@ chain p op = p >>= rest
       ) ||| pure a
 
 -- | Parses a parser in between spaces
-betweenSpace :: Parser a -> Parser a
-betweenSpace p = do
+betweenSpaces :: Parser a -> Parser a
+betweenSpaces p = do
+    spaces
+    result <- p
+    spaces
+    return result
+
+-- | Parses a parser in between spaces
+betweenSpaces1 :: Parser a -> Parser a
+betweenSpaces1 p = do
     spaces1
     result <- p
     spaces1
