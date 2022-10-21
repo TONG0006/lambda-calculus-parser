@@ -36,6 +36,8 @@ library
       LambdaBuilderParser
       LambdaHelper
       LambdaParser
+      ListHelper
+      ListParser
       LogicBuilderParser
       LogicHelper
   other-modules:
