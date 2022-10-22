@@ -1,10 +1,7 @@
-{-# OPTIONS_GHC -Wno-typed-holes #-}
-
 module ListHelper where
 import           AdditionalBuilder (ap3, ap4)
 import           Data.Builder      (Builder, ap, lam, term)
 import           LogicHelper       (falseChurchEncoding, trueChurchEncoding)
-import           Prelude           hiding (fail)
 
 -- | [] = null = λcn.n
 nullBuilder :: Builder

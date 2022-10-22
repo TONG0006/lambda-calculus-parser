@@ -1,9 +1,6 @@
-{-# OPTIONS_GHC -Wno-typed-holes #-}
-
 module LogicHelper where
 import           AdditionalBuilder (ap3)
 import           Data.Builder      (Builder, lam, term)
-import           Prelude           hiding (fail)
 
 -- True (λxy.x)
 trueChurchEncoding :: Builder

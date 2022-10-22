@@ -1,6 +1,4 @@
-{-# OPTIONS_GHC -Wno-typed-holes #-}
 module ArithmeticHelper where
-
 import           Data.Builder (Builder, ap, lam, term)
 
 -- | Predecessor of a number, or in other words minus one (λnfx.n(λgh.h(gf))(λu.x)(λu.u))
@@ -34,5 +32,3 @@ predBuilder n = lam 'f' $ lam 'x' $ n `ap` lam 'g' (lam 'h' $ term 'h' `ap` (ter
 -- | Subtract two church-encoded number (λmn.(n pred)m)
 minusBuilder :: Builder -> Builder -> Builder
 minusBuilder m n = (n `ap` predChurchEncoding) `ap` m
-
-
