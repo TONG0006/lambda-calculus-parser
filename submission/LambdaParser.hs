@@ -1,5 +1,5 @@
 module LambdaParser where
-import           AdditionalParser    (token)
+import           AdditionalParser    (betweenSpaces)
 import           ArithmeticParser    (arithmeticExpression,
                                       basicArithmeticExpression)
 import           ComparatorParser    (comparatorExpression)
@@ -9,142 +9,1051 @@ import           LambdaBuilderParser (longLambdaExpression,
                                       shortLambdaExpression)
 import           ListParser          (listExpression, listToken)
 import           LogicBuilderParser  (logicalExpression)
-import           Parser              (Parser, (|||))
+import           Parser              (Parser)
 
 -- $setup
 -- >>> import Parser (parse)
--- >>> import Data.Lambda (lamToBool, lamToInt)
+-- >>> import Data.Lambda (lamToBool, lamToInt, normal)
+-- >>> import AdditionalBuilder (normalBuild)
+-- >>> normalParse x y = normal <$> parse x y
 
 -- | Parses a string representing a lambda calculus expression in long form
 -- >>> parse longLambdaP "(λx.x)"
 -- Result >< \x.x
 -- >>> parse longLambdaP "(λy.y)"
 -- Result >< \y.y
+-- >>> parse longLambdaP "(λz.z)"
+-- Result >< \z.z
+-- >>> parse longLambdaP "(λa.a)"
+-- Result >< \a.a
 -- >>> parse longLambdaP "(λx.xx)"
 -- Result >< \x.xx
--- >>> parse longLambdaP "(λx.(λy.xy))"
--- Result >< \xy.xy
+-- >>> parse longLambdaP "(λx.xxx)"
+-- Result >< \x.xxx
+-- >>> parse longLambdaP "(λx.xxxx)"
+-- Result >< \x.xxxx
+-- >>> parse longLambdaP "(λx.(λy.y))"
+-- Result >< \xy.y
+-- >>> parse longLambdaP "(λx.(λy.(λz.z)))"
+-- Result >< \xyz.z
 -- >>> parse longLambdaP "(λx.(λy.(λz.xyz)))"
 -- Result >< \xyz.xyz
--- >>> parse longLambdaP "(λx.(λy.(λz.xxx)))"
--- Result >< \xyz.xxx
 -- >>> parse longLambdaP "(λx.x)(λy.y)"
 -- Result >< (\x.x)\y.y
 -- >>> parse longLambdaP "(λx.x)(λy.y)(λz.z)"
 -- Result >< (\x.x)(\y.y)\z.z
+-- >>> parse longLambdaP "(λx.x(x))"
+-- Result >< \x.xx
 -- >>> parse longLambdaP "(λx.x(xx))"
 -- Result >< \x.x(xx)
+-- >>> parse longLambdaP "(λx.x(xxx))"
+-- Result >< \x.x(xxx)
 -- >>> parse longLambdaP "(λx.x(xx)x)"
 -- Result >< \x.x(xx)x
--- >>> parse longLambdaP "(λx.(λy.xy)(λz.xz))"
--- Result >< \x.(\y.xy)\z.xz
+-- >>> parse longLambdaP "(λx.x(xx)x(xx)x)"
+-- Result >< \x.x(xx)x(xx)x
+-- >>> parse longLambdaP "(λx.xx(xx))"
+-- Result >< \x.xx(xx)
+-- >>> parse longLambdaP "(λx.xx(xx(xx)))"
+-- Result >< \x.xx(xx(xx))
+-- >>> parse longLambdaP "(λx.xx(xx(xx(xx))))"
+-- Result >< \x.xx(xx(xx(xx)))
+-- >>> parse longLambdaP "(λx.xx(xx(xx(xx(xx)))))"
+-- Result >< \x.xx(xx(xx(xx(xx))))
+-- >>> parse longLambdaP "(λx.xx(λy.yy))"
+-- Result >< \x.xx\y.yy
+-- >>> parse longLambdaP "(λx.xx(λy.yy)xx)"
+-- Result >< \x.xx(\y.yy)(xx)
+-- >>> parse longLambdaP "(λx.xx(λy.yy)xx(λz.zz))"
+-- Result >< \x.xx(\y.yy)(xx)\z.zz
+-- >>> parse longLambdaP "(λx.xx(λy.xy)xx(λz.xz))"
+-- Result >< \x.xx(\y.xy)(xx)\z.xz
+-- >>> parse longLambdaP "(λx.(λy.xy(xx)))"
+-- Result >< \xy.xy(xx)
+-- >>> parse longLambdaP "( λx.x)"
+-- Result >< \x.x
+-- >>> parse longLambdaP "(  λx.x)"
+-- Result >< \x.x
 -- >>> parse longLambdaP "(λ x.x)"
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λ  x.x)"
 -- Result >< \x.x
 -- >>> parse longLambdaP "(λx .x)"
 -- Result >< \x.x
+-- >>> parse longLambdaP "(λx  .x)"
+-- Result >< \x.x
 -- >>> parse longLambdaP "(λx. x)"
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λx.  x)"
 -- Result >< \x.x
 -- >>> parse longLambdaP "(λx.x )"
 -- Result >< \x.x
--- >>> parse longLambdaP "(λ  x  .  x  )"
+-- >>> parse longLambdaP "(λx.x  )"
 -- Result >< \x.x
+-- >>> parse longLambdaP "(λx.x) "
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λx.x)  "
+-- Result >< \x.x
+-- >>> parse longLambdaP "( λ x . x ) "
+-- Result >< \x.x
+-- >>> parse longLambdaP "(  λ  x  .  x  )  "
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λx.x x)"
+-- Result >< \x.xx
+-- >>> parse longLambdaP "(λx.x (λy.y))"
+-- Result >< \x.x\y.y
+-- >>> parse longLambdaP "(λx.x (λy.y) (λz.z))"
+-- Result >< \x.x(\y.y)\z.z
+-- >>> parse longLambdaP "(λx.x(λy.y) x (λz.z))"
+-- Result >< \x.x(\y.y)x\z.z
+-- >>> parse longLambdaP "(λx.(λ_.x))"
+-- Result >< \x_.x
+-- >>> parse longLambdaP "(λ_._)"
+-- Result >< \_._
+-- >>> parse longLambdaP "λx.x)"
+-- UnexpectedChar '\955'
+-- >>> parse longLambdaP "(x.x)"
+-- UnexpectedChar '.'
+-- >>> parse longLambdaP "(λx.)"
+-- UnexpectedChar '\955'
+-- >>> parse longLambdaP "(λxx)"
+-- UnexpectedChar '\955'
+-- >>> parse longLambdaP "(λx.x"
+-- UnexpectedChar '\955'
+-- >>> parse longLambdaP "λx.x"
+-- UnexpectedChar '\955'
+-- >>> parse longLambdaP "(λ?.?)"
+-- UnexpectedChar '\955'
+-- >>> parse longLambdaP "(λλ.λ)"
+-- UnexpectedChar '\955'
+-- >>> parse longLambdaP "(λx.(λλ.x))"
+-- UnexpectedChar '\955'
+-- >>> parse longLambdaP "x"
+-- Result >< *** Exception: The expression `_0` is malformed:
+--   Error: The expression contains a free variable `x`
 longLambdaP :: Parser Lambda
-longLambdaP = build <$> token longLambdaExpression
+longLambdaP = build <$> betweenSpaces longLambdaExpression
 
 -- | Parses a string representing a lambda calculus expression in short form
+-- >>> parse shortLambdaP "(λx.x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λy.y)"
+-- Result >< \y.y
+-- >>> parse shortLambdaP "(λz.z)"
+-- Result >< \z.z
+-- >>> parse shortLambdaP "(λa.a)"
+-- Result >< \a.a
+-- >>> parse shortLambdaP "(λx.xx)"
+-- Result >< \x.xx
+-- >>> parse shortLambdaP "(λx.xxx)"
+-- Result >< \x.xxx
+-- >>> parse shortLambdaP "(λx.xxxx)"
+-- Result >< \x.xxxx
+-- >>> parse shortLambdaP "(λx.(λy.y))"
+-- Result >< \xy.y
+-- >>> parse shortLambdaP "(λx.(λy.(λz.z)))"
+-- Result >< \xyz.z
+-- >>> parse shortLambdaP "(λx.(λy.(λz.xyz)))"
+-- Result >< \xyz.xyz
+-- >>> parse shortLambdaP "(λx.x)(λy.y)"
+-- Result >< (\x.x)\y.y
+-- >>> parse shortLambdaP "(λx.x)(λy.y)(λz.z)"
+-- Result >< (\x.x)(\y.y)\z.z
+-- >>> parse shortLambdaP "(λx.x(x))"
+-- Result >< \x.xx
+-- >>> parse shortLambdaP "(λx.x(xx))"
+-- Result >< \x.x(xx)
+-- >>> parse shortLambdaP "(λx.x(xxx))"
+-- Result >< \x.x(xxx)
+-- >>> parse shortLambdaP "(λx.x(xx)x)"
+-- Result >< \x.x(xx)x
+-- >>> parse shortLambdaP "(λx.x(xx)x(xx)x)"
+-- Result >< \x.x(xx)x(xx)x
+-- >>> parse shortLambdaP "(λx.xx(xx))"
+-- Result >< \x.xx(xx)
+-- >>> parse shortLambdaP "(λx.xx(xx(xx)))"
+-- Result >< \x.xx(xx(xx))
+-- >>> parse shortLambdaP "(λx.xx(xx(xx(xx))))"
+-- Result >< \x.xx(xx(xx(xx)))
+-- >>> parse shortLambdaP "(λx.xx(xx(xx(xx(xx)))))"
+-- Result >< \x.xx(xx(xx(xx(xx))))
+-- >>> parse shortLambdaP "(λx.xx(λy.yy))"
+-- Result >< \x.xx\y.yy
+-- >>> parse shortLambdaP "(λx.xx(λy.yy)xx)"
+-- Result >< \x.xx(\y.yy)(xx)
+-- >>> parse shortLambdaP "(λx.xx(λy.yy)xx(λz.zz))"
+-- Result >< \x.xx(\y.yy)(xx)\z.zz
+-- >>> parse shortLambdaP "(λx.xx(λy.xy)xx(λz.xz))"
+-- Result >< \x.xx(\y.xy)(xx)\z.xz
+-- >>> parse shortLambdaP "(λx.(λy.xy(xx)))"
+-- Result >< \xy.xy(xx)
+-- >>> parse shortLambdaP "( λx.x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(  λx.x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λ x.x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λ  x.x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx .x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx  .x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx. x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx.  x)"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx.x )"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx.x  )"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx.x) "
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx.x)  "
+-- Result >< \x.x
+-- >>> parse shortLambdaP "( λ x . x ) "
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(  λ  x  .  x  )  "
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λx.x x)"
+-- Result >< \x.xx
+-- >>> parse shortLambdaP "(λx.x (λy.y))"
+-- Result >< \x.x\y.y
+-- >>> parse shortLambdaP "(λx.x (λy.y) (λz.z))"
+-- Result >< \x.x(\y.y)\z.z
+-- >>> parse shortLambdaP "(λx.x(λy.y) x (λz.z))"
+-- Result >< \x.x(\y.y)x\z.z
+-- >>> parse shortLambdaP "(λx.(λ_.x))"
+-- Result >< \x_.x
+-- >>> parse shortLambdaP "(λ_._)"
+-- Result >< \_._
+-- >>> parse shortLambdaP "λx.x)"
+-- Result >)< \x.x
+-- >>> parse shortLambdaP "(x.x)"
+-- UnexpectedChar '.'
+-- >>> parse shortLambdaP "(λx.)"
+-- UnexpectedChar '\955'
+-- >>> parse shortLambdaP "(λxx)"
+-- UnexpectedChar '\955'
+-- >>> parse shortLambdaP "(λx.x"
+-- UnexpectedEof
+-- >>> parse shortLambdaP "λx.x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "(λ?.?)"
+-- UnexpectedChar '\955'
+-- >>> parse shortLambdaP "(λλ.λ)"
+-- UnexpectedChar '\955'
+-- >>> parse shortLambdaP "(λx.(λλ.x))"
+-- UnexpectedChar '\955'
+-- >>> parse shortLambdaP "x"
+-- Result >< *** Exception: The expression `_0` is malformed:
+--   Error: The expression contains a free variable `x`
+-- >>> parse shortLambdaP "λx.x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λy.y"
+-- Result >< \y.y
+-- >>> parse shortLambdaP "λz.z"
+-- Result >< \z.z
+-- >>> parse shortLambdaP "λa.a"
+-- Result >< \a.a
 -- >>> parse shortLambdaP "λx.xx"
 -- Result >< \x.xx
--- >>> parse shortLambdaP "λxy.xy(xx)"
+-- >>> parse shortLambdaP "λx.xxx"
+-- Result >< \x.xxx
+-- >>> parse shortLambdaP "λx.xxxx"
+-- Result >< \x.xxxx
+-- >>> parse shortLambdaP "λx.λy.y"
+-- Result >< \xy.y
+-- >>> parse shortLambdaP "λx.λy.λz.z"
+-- Result >< \xyz.z
+-- >>> parse shortLambdaP "λx.λy.λz.xyz"
+-- Result >< \xyz.xyz
+-- >>> parse shortLambdaP "(λx.x)λy.y"
+-- Result >< (\x.x)\y.y
+-- >>> parse shortLambdaP "(λx.x)(λy.y)λz.z"
+-- Result >< (\x.x)(\y.y)\z.z
+-- >>> parse shortLambdaP "λx.x(x)"
+-- Result >< \x.xx
+-- >>> parse shortLambdaP "λx.x(xx)"
+-- Result >< \x.x(xx)
+-- >>> parse shortLambdaP "λx.x(xxx)"
+-- Result >< \x.x(xxx)
+-- >>> parse shortLambdaP "λx.x(xx)x"
+-- Result >< \x.x(xx)x
+-- >>> parse shortLambdaP "λx.x(xx)x(xx)x"
+-- Result >< \x.x(xx)x(xx)x
+-- >>> parse shortLambdaP "λx.xx(xx)"
+-- Result >< \x.xx(xx)
+-- >>> parse shortLambdaP "λx.xx(xx(xx))"
+-- Result >< \x.xx(xx(xx))
+-- >>> parse shortLambdaP "λx.xx(xx(xx(xx)))"
+-- Result >< \x.xx(xx(xx(xx)))
+-- >>> parse shortLambdaP "λx.xx(xx(xx(xx(xx))))"
+-- Result >< \x.xx(xx(xx(xx(xx))))
+-- >>> parse shortLambdaP "λx.xx(λy.yy)"
+-- Result >< \x.xx\y.yy
+-- >>> parse shortLambdaP "λx.xx(λy.yy)xx"
+-- Result >< \x.xx(\y.yy)(xx)
+-- >>> parse shortLambdaP "λx.xx(λy.yy)xx(λz.zz)"
+-- Result >< \x.xx(\y.yy)(xx)\z.zz
+-- >>> parse shortLambdaP "λx.xx(λy.xy)xx(λz.xz)"
+-- Result >< \x.xx(\y.xy)(xx)\z.xz
+-- >>> parse shortLambdaP "λx.(λy.xy(xx))"
 -- Result >< \xy.xy(xx)
--- >>> parse shortLambdaP "λx.x(λy.yy)"
--- Result >< \x.x\y.yy
--- >>> parse shortLambdaP "(λx.x)(λy.yy)"
--- Result >< (\x.x)\y.yy
+-- >>> parse shortLambdaP " λx.x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "  λx.x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λ x.x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λ  x.x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λx .x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λx  .x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λx. x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λx.  x"
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λx.x "
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λx.x  "
+-- Result >< \x.x
+-- >>> parse shortLambdaP " λ x . x "
+-- Result >< \x.x
+-- >>> parse shortLambdaP "  λ  x  .  x  "
+-- Result >< \x.x
+-- >>> parse shortLambdaP "λx.x x"
+-- Result >< \x.xx
+-- >>> parse shortLambdaP "λx.x (λy.y)"
+-- Result >< \x.x\y.y
+-- >>> parse shortLambdaP "λx.x (λy.y) (λz.z)"
+-- Result >< \x.x(\y.y)\z.z
+-- >>> parse shortLambdaP "λx.x(λy.y) x (λz.z)"
+-- Result >< \x.x(\y.y)x\z.z
+-- >>> parse shortLambdaP "λx.(λ_.x)"
+-- Result >< \x_.x
+-- >>> parse shortLambdaP "λ_._"
+-- Result >< \_._
+-- >>> parse shortLambdaP "λxy.xx"
+-- Result >< \xy.xx
+-- >>> parse shortLambdaP "λxy.xy"
+-- Result >< \xy.xy
+-- >>> parse shortLambdaP "λxyz.xyz"
+-- Result >< \xyz.xyz
+-- >>> parse shortLambdaP "λxy.xλza.yza"
+-- Result >< \xy.x\za.yza
+-- >>> parse shortLambdaP "λ x y . x λ z a . y (λb.abxyz) a"
+-- Result >< \xy.x\za.y(\b.abxyz)a
+-- >>> parse shortLambdaP "λx?.xy"
+-- UnexpectedChar '\955'
 shortLambdaP :: Parser Lambda
-shortLambdaP = build <$> token shortLambdaExpression
+shortLambdaP = build <$> betweenSpaces shortLambdaExpression
 
 -- | Parses a string representing a lambda calculus expression in short or long form
--- >>> parse lambdaP "λx.xx"
--- Result >< \x.xx
+-- >>> parse lambdaP "(λx.x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λy.y)"
+-- Result >< \y.y
+-- >>> parse lambdaP "(λz.z)"
+-- Result >< \z.z
+-- >>> parse lambdaP "(λa.a)"
+-- Result >< \a.a
 -- >>> parse lambdaP "(λx.xx)"
 -- Result >< \x.xx
+-- >>> parse lambdaP "(λx.xxx)"
+-- Result >< \x.xxx
+-- >>> parse lambdaP "(λx.xxxx)"
+-- Result >< \x.xxxx
+-- >>> parse lambdaP "(λx.(λy.y))"
+-- Result >< \xy.y
+-- >>> parse lambdaP "(λx.(λy.(λz.z)))"
+-- Result >< \xyz.z
+-- >>> parse lambdaP "(λx.(λy.(λz.xyz)))"
+-- Result >< \xyz.xyz
+-- >>> parse lambdaP "(λx.x)(λy.y)"
+-- Result >< (\x.x)\y.y
+-- >>> parse lambdaP "(λx.x)(λy.y)(λz.z)"
+-- Result >< (\x.x)(\y.y)\z.z
+-- >>> parse lambdaP "(λx.x(x))"
+-- Result >< \x.xx
+-- >>> parse lambdaP "(λx.x(xx))"
+-- Result >< \x.x(xx)
+-- >>> parse lambdaP "(λx.x(xxx))"
+-- Result >< \x.x(xxx)
+-- >>> parse lambdaP "(λx.x(xx)x)"
+-- Result >< \x.x(xx)x
+-- >>> parse lambdaP "(λx.x(xx)x(xx)x)"
+-- Result >< \x.x(xx)x(xx)x
+-- >>> parse lambdaP "(λx.xx(xx))"
+-- Result >< \x.xx(xx)
+-- >>> parse lambdaP "(λx.xx(xx(xx)))"
+-- Result >< \x.xx(xx(xx))
+-- >>> parse lambdaP "(λx.xx(xx(xx(xx))))"
+-- Result >< \x.xx(xx(xx(xx)))
+-- >>> parse lambdaP "(λx.xx(xx(xx(xx(xx)))))"
+-- Result >< \x.xx(xx(xx(xx(xx))))
+-- >>> parse lambdaP "(λx.xx(λy.yy))"
+-- Result >< \x.xx\y.yy
+-- >>> parse lambdaP "(λx.xx(λy.yy)xx)"
+-- Result >< \x.xx(\y.yy)(xx)
+-- >>> parse lambdaP "(λx.xx(λy.yy)xx(λz.zz))"
+-- Result >< \x.xx(\y.yy)(xx)\z.zz
+-- >>> parse lambdaP "(λx.xx(λy.xy)xx(λz.xz))"
+-- Result >< \x.xx(\y.xy)(xx)\z.xz
+-- >>> parse lambdaP "(λx.(λy.xy(xx)))"
+-- Result >< \xy.xy(xx)
+-- >>> parse lambdaP "( λx.x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(  λx.x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λ x.x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λ  x.x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx .x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx  .x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx. x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx.  x)"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx.x )"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx.x  )"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx.x) "
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx.x)  "
+-- Result >< \x.x
+-- >>> parse lambdaP "( λ x . x ) "
+-- Result >< \x.x
+-- >>> parse lambdaP "(  λ  x  .  x  )  "
+-- Result >< \x.x
+-- >>> parse lambdaP "(λx.x x)"
+-- Result >< \x.xx
+-- >>> parse lambdaP "(λx.x (λy.y))"
+-- Result >< \x.x\y.y
+-- >>> parse lambdaP "(λx.x (λy.y) (λz.z))"
+-- Result >< \x.x(\y.y)\z.z
+-- >>> parse lambdaP "(λx.x(λy.y) x (λz.z))"
+-- Result >< \x.x(\y.y)x\z.z
+-- >>> parse lambdaP "(λx.(λ_.x))"
+-- Result >< \x_.x
+-- >>> parse lambdaP "(λ_._)"
+-- Result >< \_._
+-- >>> parse lambdaP "λx.x)"
+-- Result >)< \x.x
+-- >>> parse lambdaP "(x.x)"
+-- UnexpectedChar '.'
+-- >>> parse lambdaP "(λx.)"
+-- UnexpectedChar '\955'
+-- >>> parse lambdaP "(λxx)"
+-- UnexpectedChar '\955'
+-- >>> parse lambdaP "(λx.x"
+-- UnexpectedEof
+-- >>> parse lambdaP "λx.x"
+-- Result >< \x.x
+-- >>> parse lambdaP "(λ?.?)"
+-- UnexpectedChar '\955'
+-- >>> parse lambdaP "(λλ.λ)"
+-- UnexpectedChar '\955'
+-- >>> parse lambdaP "(λx.(λλ.x))"
+-- UnexpectedChar '\955'
 -- >>> parse lambdaP "x"
 -- Result >< *** Exception: The expression `_0` is malformed:
 --   Error: The expression contains a free variable `x`
+-- >>> parse lambdaP "λx.x"
+-- Result >< \x.x
+-- >>> parse lambdaP "λy.y"
+-- Result >< \y.y
+-- >>> parse lambdaP "λz.z"
+-- Result >< \z.z
+-- >>> parse lambdaP "λa.a"
+-- Result >< \a.a
+-- >>> parse lambdaP "λx.xx"
+-- Result >< \x.xx
+-- >>> parse lambdaP "λx.xxx"
+-- Result >< \x.xxx
+-- >>> parse lambdaP "λx.xxxx"
+-- Result >< \x.xxxx
+-- >>> parse lambdaP "λx.λy.y"
+-- Result >< \xy.y
+-- >>> parse lambdaP "λx.λy.λz.z"
+-- Result >< \xyz.z
+-- >>> parse lambdaP "λx.λy.λz.xyz"
+-- Result >< \xyz.xyz
+-- >>> parse lambdaP "(λx.x)λy.y"
+-- Result >< (\x.x)\y.y
+-- >>> parse lambdaP "(λx.x)(λy.y)λz.z"
+-- Result >< (\x.x)(\y.y)\z.z
+-- >>> parse lambdaP "λx.x(x)"
+-- Result >< \x.xx
+-- >>> parse lambdaP "λx.x(xx)"
+-- Result >< \x.x(xx)
+-- >>> parse lambdaP "λx.x(xxx)"
+-- Result >< \x.x(xxx)
+-- >>> parse lambdaP "λx.x(xx)x"
+-- Result >< \x.x(xx)x
+-- >>> parse lambdaP "λx.x(xx)x(xx)x"
+-- Result >< \x.x(xx)x(xx)x
+-- >>> parse lambdaP "λx.xx(xx)"
+-- Result >< \x.xx(xx)
+-- >>> parse lambdaP "λx.xx(xx(xx))"
+-- Result >< \x.xx(xx(xx))
+-- >>> parse lambdaP "λx.xx(xx(xx(xx)))"
+-- Result >< \x.xx(xx(xx(xx)))
+-- >>> parse lambdaP "λx.xx(xx(xx(xx(xx))))"
+-- Result >< \x.xx(xx(xx(xx(xx))))
+-- >>> parse lambdaP "λx.xx(λy.yy)"
+-- Result >< \x.xx\y.yy
+-- >>> parse lambdaP "λx.xx(λy.yy)xx"
+-- Result >< \x.xx(\y.yy)(xx)
+-- >>> parse lambdaP "λx.xx(λy.yy)xx(λz.zz)"
+-- Result >< \x.xx(\y.yy)(xx)\z.zz
+-- >>> parse lambdaP "λx.xx(λy.xy)xx(λz.xz)"
+-- Result >< \x.xx(\y.xy)(xx)\z.xz
+-- >>> parse lambdaP "λx.(λy.xy(xx))"
+-- Result >< \xy.xy(xx)
+-- >>> parse lambdaP " λx.x"
+-- Result >< \x.x
+-- >>> parse lambdaP "  λx.x"
+-- Result >< \x.x
+-- >>> parse lambdaP "λ x.x"
+-- Result >< \x.x
+-- >>> parse lambdaP "λ  x.x"
+-- Result >< \x.x
+-- >>> parse lambdaP "λx .x"
+-- Result >< \x.x
+-- >>> parse lambdaP "λx  .x"
+-- Result >< \x.x
+-- >>> parse lambdaP "λx. x"
+-- Result >< \x.x
+-- >>> parse lambdaP "λx.  x"
+-- Result >< \x.x
+-- >>> parse lambdaP "λx.x "
+-- Result >< \x.x
+-- >>> parse lambdaP "λx.x  "
+-- Result >< \x.x
+-- >>> parse lambdaP " λ x . x "
+-- Result >< \x.x
+-- >>> parse lambdaP "  λ  x  .  x  "
+-- Result >< \x.x
+-- >>> parse lambdaP "λx.x x"
+-- Result >< \x.xx
+-- >>> parse lambdaP "λx.x (λy.y)"
+-- Result >< \x.x\y.y
+-- >>> parse lambdaP "λx.x (λy.y) (λz.z)"
+-- Result >< \x.x(\y.y)\z.z
+-- >>> parse lambdaP "λx.x(λy.y) x (λz.z)"
+-- Result >< \x.x(\y.y)x\z.z
+-- >>> parse lambdaP "λx.(λ_.x)"
+-- Result >< \x_.x
+-- >>> parse lambdaP "λ_._"
+-- Result >< \_._
+-- >>> parse lambdaP "λxy.xx"
+-- Result >< \xy.xx
+-- >>> parse lambdaP "λxy.xy"
+-- Result >< \xy.xy
+-- >>> parse lambdaP "λxyz.xyz"
+-- Result >< \xyz.xyz
+-- >>> parse lambdaP "λxy.xλza.yza"
+-- Result >< \xy.x\za.yza
+-- >>> parse lambdaP "λ x y . x λ z a . y (λb.abxyz) a"
+-- Result >< \xy.x\za.y(\b.abxyz)a
+-- >>> parse lambdaP "λx?.xy"
+-- UnexpectedChar '\955'
 lambdaP :: Parser Lambda
-lambdaP = longLambdaP ||| shortLambdaP
+lambdaP = shortLambdaP
 
--- | Parse a logical expression and returns in lambda calculus
+-- | parse a logical expression and returns in lambda calculus
+-- >>> lamToBool <$> parse logicP "True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "True and True"
+-- Result >< Just True
 -- >>> lamToBool <$> parse logicP "True and False"
 -- Result >< Just False
--- >>> lamToBool <$> parse logicP "True and False or not False and True"
+-- >>> lamToBool <$> parse logicP "False and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "False and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "True and True and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "True and False and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "False and True and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "True and (True and False)"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "(True and True) and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "True or True"
 -- Result >< Just True
+-- >>> lamToBool <$> parse logicP "True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "False or False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "True or True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "True or False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "False or True or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "True or (True or False)"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "(True or True) or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "True and True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "False and False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "True and (True or False)"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "(True and True) or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "not True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "not False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "not not True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse logicP "not not False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse logicP "not not not True"
+-- Result >< Just False
 -- >>> lamToBool <$> parse logicP "not not not False"
 -- Result >< Just True
--- >>> parse logicP "True and"
--- Result >and< \xy.x
--- >>> parse logicP "not False"
--- Result >< (\xy.y)(\xy.y)\xy.x
+-- >>> lamToBool <$> parse logicP "True and False or not False and True"
+-- Result >< Just True
 -- >>> lamToBool <$> parse logicP "if True and not False then True or True else False"
 -- Result >< Just True
 -- >>> lamToBool <$> parse logicP "if False then True else True and if True then False else False"
 -- Result >< Just False
+-- >>> lamToBool <$> parse logicP "Trueand False"
+-- Result >and False< Just True
+-- >>> lamToBool <$> parse logicP "True andFalse"
+-- Result >andFalse< Just True
+-- >>> lamToBool <$> parse logicP "True and"
+-- Result >and< Just True
+-- >>> lamToBool <$> parse logicP "true"
+-- UnexpectedChar 't'
+-- >>> lamToBool <$> parse logicP "false"
+-- UnexpectedChar 'f'
 logicP :: Parser Lambda
-logicP = build <$> token logicalExpression
+logicP = build <$> betweenSpaces logicalExpression
 
--- | Parse simple arithmetic expressions involving + - and natural numbers into lambda calculus
+-- | parse simple arithmetic expressions involving + - and natural numbers into lambda calculus
+-- >>> lamToInt <$> parse basicArithmeticP "1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse basicArithmeticP "1+1"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse basicArithmeticP "1+1+1"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse basicArithmeticP "1+1+(1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse basicArithmeticP "1+(1+1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse basicArithmeticP "(1+1+1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse basicArithmeticP "1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse basicArithmeticP "1-1"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse basicArithmeticP "3-1-1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse basicArithmeticP "4-2-(1)"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse basicArithmeticP "4-(2-1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse basicArithmeticP "(5-1-2)"
+-- Result >< Just 2
 -- >>> lamToInt <$> parse basicArithmeticP "5 + 4"
 -- Result >< Just 9
--- >>> lamToInt <$> parse basicArithmeticP "5 + 9 - 3 + 2"
--- Result >< Just 13
+-- >>> lamToInt <$> parse basicArithmeticP "(11-5) - (3+2)"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse basicArithmeticP "2+(2+(2+(2+(3-1))))"
+-- Result >< Just 10
+-- >>> lamToInt <$> parse basicArithmeticP "2+(2+(2+(2+(3-1)-4)-8)-(2+8))"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse basicArithmeticP "1-2"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse basicArithmeticP "3-5+2"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse basicArithmeticP "3-(5+2)"
+-- Result >< Just 0
 basicArithmeticP :: Parser Lambda
-basicArithmeticP = build <$> token basicArithmeticExpression
+basicArithmeticP = build <$> betweenSpaces basicArithmeticExpression
 
--- | Parse arithmetic expressions involving + - * ** () and natural numbers into lambda calculus
+-- | parse arithmetic expressions involving + - * ** () and natural numbers into lambda calculus
+-- >>> lamToInt <$> parse arithmeticP "1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse arithmeticP "1+1"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse arithmeticP "1+1+1"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse arithmeticP "1+1+(1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse arithmeticP "1+(1+1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse arithmeticP "(1+1+1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse arithmeticP "1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse arithmeticP "1-1"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse arithmeticP "3-1-1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse arithmeticP "4-2-(1)"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse arithmeticP "4-(2-1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse arithmeticP "(5-1-2)"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse arithmeticP "5 + 4"
+-- Result >< Just 9
+-- >>> lamToInt <$> parse arithmeticP "(11-5) - (3+2)"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse arithmeticP "2+(2+(2+(2+(3-1))))"
+-- Result >< Just 10
+-- >>> lamToInt <$> parse arithmeticP "2+(2+(2+(2+(3-1)-4)-8)-(2+8))"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse arithmeticP "1-2"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse arithmeticP "3-5+2"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse arithmeticP "3-(5+2)"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse arithmeticP "2**3*4+5-6"
+-- Result >< Just 31
+-- >>> lamToInt <$> parse arithmeticP "10+9-3*2**2"
+-- Result >< Just 7
+-- >>> lamToInt <$> parse arithmeticP "(((2+3)-4)*5)**2"
+-- Result >< Just 25
 -- >>> lamToInt <$> parse arithmeticP "5 + 9 * 3 - 2**3"
 -- Result >< Just 24
 -- >>> lamToInt <$> parse arithmeticP "100 - 4 * 2**(4-1)"
 -- Result >< Just 68
+-- >>> lamToInt <$> parse arithmeticP "1+(2**3-2)+3*(5-2*2)**2-2**3+2+2*(3+2*(4-2**4-2*(1**2+7)))"
+-- Result >< Just 10
 arithmeticP :: Parser Lambda
-arithmeticP = build <$> token arithmeticExpression
+arithmeticP = build <$> betweenSpaces arithmeticExpression
 
 -- | Parses comparator and boolean expressions
+-- >>> lamToBool <$> parse complexCalcP "True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "True and True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "True and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "False and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "False and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "True and True and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "True and False and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "False and True and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "True and (True and False)"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "(True and True) and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "True or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "False or False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "True or True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "True or False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "False or True or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "True or (True or False)"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "(True or True) or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "True and True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "False and False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "True and (True or False)"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "(True and True) or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "not True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "not False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "not not True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "not not False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "not not not True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "not not not False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "True and False or not False and True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "if True and not False then True or True else False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse complexCalcP "if False then True else True and if True then False else False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse complexCalcP "Trueand False"
+-- Result >and False< Just True
+-- >>> lamToBool <$> parse complexCalcP "True andFalse"
+-- Result >andFalse< Just True
+-- >>> lamToBool <$> parse complexCalcP "True and"
+-- Result >and< Just True
+-- >>> lamToBool <$> parse complexCalcP "true"
+-- UnexpectedChar 't'
+-- >>> lamToBool <$> parse complexCalcP "false"
+-- UnexpectedChar 'f'
 -- >>> lamToBool <$> parse complexCalcP "9 - 2 <= 3 + 6"
 -- Result >< Just True
---
 -- >>> lamToBool <$> parse complexCalcP "15 - 2 * 2 != 2**3 + 3 or 5 * 3 + 1 < 9"
 -- Result >< Just False
+-- >>> lamToInt <$> parse complexCalcP "1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse complexCalcP "1+1"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse complexCalcP "1+1+1"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse complexCalcP "1+1+(1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse complexCalcP "1+(1+1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse complexCalcP "(1+1+1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse complexCalcP "1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse complexCalcP "1-1"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse complexCalcP "3-1-1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse complexCalcP "4-2-(1)"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse complexCalcP "4-(2-1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse complexCalcP "(5-1-2)"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse complexCalcP "5 + 4"
+-- Result >< Just 9
+-- >>> lamToInt <$> parse complexCalcP "(11-5) - (3+2)"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse complexCalcP "2+(2+(2+(2+(3-1))))"
+-- Result >< Just 10
+-- >>> lamToInt <$> parse complexCalcP "2+(2+(2+(2+(3-1)-4)-8)-(2+8))"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse complexCalcP "1-2"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse complexCalcP "3-5+2"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse complexCalcP "3-(5+2)"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse complexCalcP "2**3*4+5-6"
+-- Result >< Just 31
+-- >>> lamToInt <$> parse complexCalcP "10+9-3*2**2"
+-- Result >< Just 7
+-- >>> lamToInt <$> parse complexCalcP "(((2+3)-4)*5)**2"
+-- Result >< Just 25
+-- >>> lamToInt <$> parse complexCalcP "5 + 9 * 3 - 2**3"
+-- Result >< Just 24
+-- >>> lamToInt <$> parse complexCalcP "100 - 4 * 2**(4-1)"
+-- Result >< Just 68
+-- >>> lamToInt <$> parse complexCalcP "1+(2**3-2)+3*(5-2*2)**2-2**3+2+2*(3+2*(4-2**4-2*(1**2+7)))"
+-- Result >< Just 10
+-- >>> lamToBool <$> parse complexCalcP "1<2 and 3<4 or (3<3 and 2<1 and (2-2 == 0))"
+-- Result >< Just True
 complexCalcP :: Parser Lambda
-complexCalcP = build <$> token comparatorExpression
-
+complexCalcP = build <$> betweenSpaces comparatorExpression
 
 -- | Parses a list
 -- >>> parse listP "[]"
 -- Result >< \cn.n
---
 -- >>> parse listP "[True]"
 -- Result >< \cn.c(\xy.x)((\ab.b)cn)
---
 -- >>> parse listP "[0, 0]"
 -- Result >< \cn.c(\fx.x)((\ab.a(\fx.x)((\de.e)ab))cn)
---
 -- >>> parse listP "[0, 0"
--- UnexpectedEof
+-- UnexpectedChar '['
 listP :: Parser Lambda
-listP = build <$> token listToken
+listP = build <$> betweenSpaces listToken
 
 -- | Parses a list along with its operators
+-- >>> lamToBool <$> parse listOpP "True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "True and True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "True and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "False and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "False and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "True and True and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "True and False and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "False and True and True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "True and (True and False)"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "(True and True) and False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "True or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "False or False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "True or True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "True or False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "False or True or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "True or (True or False)"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "(True or True) or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "True and True or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "False and False or True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "True and (True or False)"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "(True and True) or False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "not True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "not False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "not not True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "not not False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "not not not True"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "not not not False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "True and False or not False and True"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "if True and not False then True or True else False"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "if False then True else True and if True then False else False"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "Trueand False"
+-- Result >and False< Just True
+-- >>> lamToBool <$> parse listOpP "True andFalse"
+-- Result >andFalse< Just True
+-- >>> lamToBool <$> parse listOpP "True and"
+-- Result >and< Just True
+-- >>> lamToBool <$> parse listOpP "true"
+-- UnexpectedChar 't'
+-- >>> lamToBool <$> parse listOpP "false"
+-- UnexpectedChar 'f'
+-- >>> lamToBool <$> parse listOpP "9 - 2 <= 3 + 6"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "15 - 2 * 2 != 2**3 + 3 or 5 * 3 + 1 < 9"
+-- Result >< Just False
+-- >>> lamToInt <$> parse listOpP "1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse listOpP "1+1"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse listOpP "1+1+1"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse listOpP "1+1+(1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse listOpP "1+(1+1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse listOpP "(1+1+1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse listOpP "1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse listOpP "1-1"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse listOpP "3-1-1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse listOpP "4-2-(1)"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse listOpP "4-(2-1)"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse listOpP "(5-1-2)"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse listOpP "5 + 4"
+-- Result >< Just 9
+-- >>> lamToInt <$> parse listOpP "(11-5) - (3+2)"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse listOpP "2+(2+(2+(2+(3-1))))"
+-- Result >< Just 10
+-- >>> lamToInt <$> parse listOpP "2+(2+(2+(2+(3-1)-4)-8)-(2+8))"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse listOpP "1-2"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse listOpP "3-5+2"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse listOpP "3-(5+2)"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse listOpP "2**3*4+5-6"
+-- Result >< Just 31
+-- >>> lamToInt <$> parse listOpP "10+9-3*2**2"
+-- Result >< Just 7
+-- >>> lamToInt <$> parse listOpP "(((2+3)-4)*5)**2"
+-- Result >< Just 25
+-- >>> lamToInt <$> parse listOpP "5 + 9 * 3 - 2**3"
+-- Result >< Just 24
+-- >>> lamToInt <$> parse listOpP "100 - 4 * 2**(4-1)"
+-- Result >< Just 68
+-- >>> lamToInt <$> parse listOpP "1+(2**3-2)+3*(5-2*2)**2-2**3+2+2*(3+2*(4-2**4-2*(1**2+7)))"
+-- Result >< Just 10
+-- >>> lamToBool <$> parse listOpP "1<2 and 3<4 or (3<3 and 2<1 and (2-2 == 0))"
+-- Result >< Just True
 -- >>> lamToBool <$> parse listOpP "head [True, False, True, False, False]"
 -- Result >< Just True
---
 -- >>> lamToBool <$> parse listOpP "head rest [True, False, True, False, False]"
 -- Result >< Just False
---
 -- >>> lamToBool <$> parse listOpP "isNull []"
 -- Result >< Just True
---
 -- >>> lamToBool <$> parse listOpP "isNull [1, 2, 3]"
 -- Result >< Just False
+-- >>> lamToInt <$> parse listOpP "head [3+7, 2-1, 3*2]"
+-- Result >< Just 10
+-- >>> lamToInt <$> parse listOpP "head rest [3+7, 2-1, 3*2]"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse listOpP "head rest rest [3+7, 2-1, 3*2]"
+-- Result >< Just 6
+-- >>> lamToInt <$> parse listOpP "head rest rest rest [3+7, 2-1, 3*2, 2**4]"
+-- Result >< Just 16
+-- >>> lamToBool <$> parse listOpP "head rest rest rest rest [3+7, 2-1, 3*2, 2**4, 7<3]"
+-- Result >< Just False
+-- >>> lamToBool <$> parse listOpP "head rest rest rest rest rest [3+7, 2-1, 3*2, 2**4, 7<3, False]"
+-- Result >< Just False
+-- >>> lamToInt <$> build <$> parse listExpression "head head [[3]]"
+-- Result >< Just 3
+-- >>>  lamToBool <$> parse listOpP "head [isNull []]"
+-- Result >< Just True
+-- >>> lamToBool <$> parse listOpP "2**4 - 2 > 1 and isNull [1,2,3] or rest [False] != True"
+-- Result >< Just True
+-- >>> lamToBool <$>  parse listOpP "head [isNull [] and 2<3]"
+-- Result >< Just True
+-- >>> lamToBool <$>  parse listOpP "head [2<3 and isNull []]"
+-- Result >< Just True
 listOpP :: Parser Lambda
-listOpP = build <$> token listExpression
-
+listOpP = build <$> betweenSpaces listExpression

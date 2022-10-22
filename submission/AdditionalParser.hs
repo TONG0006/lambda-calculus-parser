@@ -34,7 +34,7 @@ stringToken = token . string
 
 -- | Write a parser that parses a comma ',' followed by 0 or more spaces.
 commaToken :: Parser Char
-commaToken = charToken ','
+commaToken = betweenSpaces $ is ','
 
 -- | Parses an lambda 'λ' followed by 0 or more spaces.
 lambdaToken :: Parser Char
@@ -58,7 +58,7 @@ openBracketToken = charToken '['
 
 -- | Parses a close bracket ']' followed by 0 or more spaces.
 closeBracketToken :: Parser Char
-closeBracketToken = charToken ']'
+closeBracketToken = spaces *> is ']'
 
 -- | Parses a bracketed expression
 -- >>> parse (bracket int) "(321)"

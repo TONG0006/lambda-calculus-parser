@@ -1,10 +1,11 @@
 module ListParser where
-import           AdditionalParser   (arrayToken, chain, token, unaryToken1)
-import           ArithmeticParser   (intLambda)
+import           AdditionalParser   (arrayToken, chain, unaryToken1)
+import           ArithmeticParser   (arithmeticPrecedence)
+import           ComparatorParser   (comparatorExpression, comparatorPrecedence)
 import           Data.Builder       (Builder)
 import           ListHelper         (consBuilder, headBuilder, isNullBuilder,
                                      nullBuilder, tailBuilder)
-import           LogicBuilderParser (logicalTerm)
+import           LogicBuilderParser (logicalPrecedence)
 import           Parser             (Parser, (|||))
 
 -- $setup
@@ -14,8 +15,8 @@ import           Parser             (Parser, (|||))
 -- >>> import Parser (parse)
 
 -- | The possible datatypes implemented in lambda calculus
-datatypeTerm :: Parser Builder
-datatypeTerm = intLambda ||| logicalTerm
+datatypeExpression :: Parser Builder
+datatypeExpression = comparatorExpression
 
 -- | Parses a list using conslist approach
 -- >>> normalBuild consToken "[]"
@@ -45,7 +46,7 @@ datatypeTerm = intLambda ||| logicalTerm
 -- >>> normalBuild consToken "[1,2,3"
 -- UnexpectedEof
 consToken :: Parser Builder
-consToken = foldr consBuilder nullBuilder <$> arrayToken (token datatypeTerm)
+consToken = foldr consBuilder nullBuilder <$> arrayToken (datatypeExpression ||| listExpression)
 
 -- | Parses a head operation
 -- >>> lamToInt <$> normalBuild headToken "head [1]"
@@ -119,15 +120,19 @@ isNullToken = unaryToken1 "isNull" $ isNullBuilder <$> listToken
 
 -- | Token for parsing a list returning operation
 listToken :: Parser Builder
-listToken = tailToken ||| consToken
+listToken = tailToken ||| consToken ||| headToken
 
 -- | Token for parsing an item returning operation
 listOperator :: Parser Builder
-listOperator = listToken ||| headToken ||| isNullToken
+listOperator = listToken ||| headToken ||| isNullToken ||| datatypeExpression
+
+-- | Token for parsing a logical returning operation
+listLogical :: Parser Builder
+listLogical = isNullToken
 
 -- | precedence for binary operations (currently unused and kept for design)
 listPrecedence :: [Parser (Builder -> Builder -> Builder)]
-listPrecedence = []
+listPrecedence = arithmeticPrecedence ++ comparatorPrecedence ++ logicalPrecedence
 
 -- | Parses list expressions and their operations (refer to LambdaParser for test cases)
 listExpression :: Parser Builder
