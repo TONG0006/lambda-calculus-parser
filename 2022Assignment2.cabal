@@ -27,9 +27,19 @@ library
       Data.Builder
       Data.Lambda
       Parser
+      AdditionalBuilder
+      AdditionalParser
+      ArithmeticHelper
+      ArithmeticParser
+      ComparatorHelper
+      ComparatorParser
       LambdaBuilderParser
+      LambdaHelper
       LambdaParser
-      ParserHelper
+      ListHelper
+      ListParser
+      LogicBuilderParser
+      LogicHelper
   other-modules:
       Paths_2022Assignment2
   hs-source-dirs:

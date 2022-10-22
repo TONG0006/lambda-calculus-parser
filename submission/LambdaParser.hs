@@ -1,191 +1,139 @@
-{-# OPTIONS_GHC -Wno-typed-holes #-}
 module LambdaParser where
+import           AdditionalParser    (token)
+import           ArithmeticParser    (arithmeticExpression,
+                                      basicArithmeticExpression)
+import           ComparatorParser    (comparatorExpression)
+import           Data.Builder        (build)
+import           Data.Lambda         (Lambda)
+import           LambdaBuilderParser (longLambdaExpression,
+                                      shortLambdaExpression)
+import           ListParser          (listExpression, listToken)
+import           LogicBuilderParser  (logicalExpression)
+import           Parser              (Parser, (|||))
 
-import           Data.Builder
-import           Data.Lambda
-import           LambdaBuilderParser
-import           Parser
-
--- You can add more imports if you need them
-
--- Remember that you can (and should) define your own functions, types, and
--- parser combinators. Each of the implementations for the functions below
--- should be fairly short and concise.
-
-
-{-|
-    Part 1
--}
-
--- | Exercise 1
+-- $setup
+-- >>> import Parser (parse)
+-- >>> import Data.Lambda (lamToBool, lamToInt)
 
 -- | Parses a string representing a lambda calculus expression in long form
---
+-- >>> parse longLambdaP "(λx.x)"
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λy.y)"
+-- Result >< \y.y
 -- >>> parse longLambdaP "(λx.xx)"
 -- Result >< \x.xx
---
--- >>> parse longLambdaP "λx.xx"
--- UnexpectedChar '\955'
---
--- >>> parse longLambdaP "(λx.(λy.xy(xx)))"
--- Result >< \xy.xy(xx)
---
--- >>> parse longLambdaP "(x)"
--- Result >< *** Exception: The expression `_0` is malformed:
---   Error: The expression contains a free variable `x`
---
--- >>> parse longLambdaP "x"
--- Result >< *** Exception: The expression `_0` is malformed:
---   Error: The expression contains a free variable `x`
---
+-- >>> parse longLambdaP "(λx.(λy.xy))"
+-- Result >< \xy.xy
+-- >>> parse longLambdaP "(λx.(λy.(λz.xyz)))"
+-- Result >< \xyz.xyz
+-- >>> parse longLambdaP "(λx.(λy.(λz.xxx)))"
+-- Result >< \xyz.xxx
+-- >>> parse longLambdaP "(λx.x)(λy.y)"
+-- Result >< (\x.x)\y.y
 -- >>> parse longLambdaP "(λx.x)(λy.y)(λz.z)"
 -- Result >< (\x.x)(\y.y)\z.z
---
--- >>> parse longLambdaP "(λx.x)λy.y(λz.z)"
--- Result >λy.y(λz.z)< \x.x
---
--- >>> parse longLambdaP "(λx.x)x"
--- Result >< *** Exception: The expression `((\x.x) _0)` is malformed:
---   Error: The expression contains a free variable `x`
+-- >>> parse longLambdaP "(λx.x(xx))"
+-- Result >< \x.x(xx)
+-- >>> parse longLambdaP "(λx.x(xx)x)"
+-- Result >< \x.x(xx)x
+-- >>> parse longLambdaP "(λx.(λy.xy)(λz.xz))"
+-- Result >< \x.(\y.xy)\z.xz
+-- >>> parse longLambdaP "(λ x.x)"
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λx .x)"
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λx. x)"
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λx.x )"
+-- Result >< \x.x
+-- >>> parse longLambdaP "(λ  x  .  x  )"
+-- Result >< \x.x
 longLambdaP :: Parser Lambda
-longLambdaP = build <$> longLambdaExpression
+longLambdaP = build <$> token longLambdaExpression
 
 -- | Parses a string representing a lambda calculus expression in short form
---
 -- >>> parse shortLambdaP "λx.xx"
 -- Result >< \x.xx
---
 -- >>> parse shortLambdaP "λxy.xy(xx)"
 -- Result >< \xy.xy(xx)
---
 -- >>> parse shortLambdaP "λx.x(λy.yy)"
 -- Result >< \x.x\y.yy
---
 -- >>> parse shortLambdaP "(λx.x)(λy.yy)"
 -- Result >< (\x.x)\y.yy
 shortLambdaP :: Parser Lambda
-shortLambdaP = build <$> shortLambdaExpression
+shortLambdaP = build <$> token shortLambdaExpression
 
 -- | Parses a string representing a lambda calculus expression in short or long form
 -- >>> parse lambdaP "λx.xx"
 -- Result >< \x.xx
---
 -- >>> parse lambdaP "(λx.xx)"
 -- Result >< \x.xx
---
--- >>> parse lambdaP "xx"
--- UnexpectedChar 'x'
+-- >>> parse lambdaP "x"
+-- Result >< *** Exception: The expression `_0` is malformed:
+--   Error: The expression contains a free variable `x`
 lambdaP :: Parser Lambda
 lambdaP = longLambdaP ||| shortLambdaP
-
-{-|
-    Part 2
--}
-
--- | Exercise 1
-
--- IMPORTANT: The church encoding for boolean constructs can be found here -> https://tgdwyer.github.io/lambdacalculus/#church-encodings
 
 -- | Parse a logical expression and returns in lambda calculus
 -- >>> lamToBool <$> parse logicP "True and False"
 -- Result >< Just False
---
 -- >>> lamToBool <$> parse logicP "True and False or not False and True"
 -- Result >< Just True
---
 -- >>> lamToBool <$> parse logicP "not not not False"
 -- Result >< Just True
---
 -- >>> parse logicP "True and"
--- Result >< (\xy.(\btf.btf)xy\_f.f)\t_.t
---
+-- Result >and< \xy.x
 -- >>> parse logicP "not False"
--- Result >< (\x.(\btf.btf)x(\_f.f)\t_.t)\_f.f
+-- Result >< (\xy.y)(\xy.y)\xy.x
 -- >>> lamToBool <$> parse logicP "if True and not False then True or True else False"
 -- Result >< Just True
-
+-- >>> lamToBool <$> parse logicP "if False then True else True and if True then False else False"
+-- Result >< Just False
 logicP :: Parser Lambda
-logicP = undefined
-
--- | Exercise 2
-
--- | The church encoding for arithmetic operations are given below (with x and y being church numerals)
-
--- | x + y = add = λxy.y succ m
--- | x - y = minus = λxy.y pred x
--- | x * y = multiply = λxyf.x(yf)
--- | x ** y = exp = λxy.yx
-
--- | The helper functions you'll need are:
--- | succ = λnfx.f(nfx)
--- | pred = λnfx.n(λgh.h(gf))(λu.x)(λu.u)
--- | Note since we haven't encoded negative numbers pred 0 == 0, and m - n (where n > m) = 0
+logicP = build <$> token logicalExpression
 
 -- | Parse simple arithmetic expressions involving + - and natural numbers into lambda calculus
 -- >>> lamToInt <$> parse basicArithmeticP "5 + 4"
 -- Result >< Just 9
---
 -- >>> lamToInt <$> parse basicArithmeticP "5 + 9 - 3 + 2"
 -- Result >< Just 13
 basicArithmeticP :: Parser Lambda
-basicArithmeticP = undefined
+basicArithmeticP = build <$> token basicArithmeticExpression
 
 -- | Parse arithmetic expressions involving + - * ** () and natural numbers into lambda calculus
 -- >>> lamToInt <$> parse arithmeticP "5 + 9 * 3 - 2**3"
 -- Result >< Just 24
---
 -- >>> lamToInt <$> parse arithmeticP "100 - 4 * 2**(4-1)"
 -- Result >< Just 68
 arithmeticP :: Parser Lambda
-arithmeticP = undefined
+arithmeticP = build <$> token arithmeticExpression
 
-
--- | Exercise 3
-
--- | The church encoding for comparison operations are given below (with x and y being church numerals)
-
--- | x <= y = LEQ = λmn.isZero (minus m n)
--- | x == y = EQ = λmn.and (LEQ m n) (LEQ n m)
-
--- | The helper function you'll need is:
--- | isZero = λn.n(λx.False)True
-
+-- | Parses comparator and boolean expressions
 -- >>> lamToBool <$> parse complexCalcP "9 - 2 <= 3 + 6"
 -- Result >< Just True
 --
 -- >>> lamToBool <$> parse complexCalcP "15 - 2 * 2 != 2**3 + 3 or 5 * 3 + 1 < 9"
 -- Result >< Just False
 complexCalcP :: Parser Lambda
-complexCalcP = undefined
+complexCalcP = build <$> token comparatorExpression
 
 
-{-|
-    Part 3
--}
-
--- | Exercise 1
-
--- | The church encoding for list constructs are given below
--- | [] = null = λcn.n
--- | isNull = λl.l(λht.False) True
--- | cons = λhtcn.ch(tcn)
--- | head = λl.l(λht.h) False
--- | tail = λlcn.l(λhtg.gh(tc))(λt.n)(λht.t)
---
+-- | Parses a list
 -- >>> parse listP "[]"
 -- Result >< \cn.n
 --
 -- >>> parse listP "[True]"
--- Result >< (\htcn.ch(tcn))(\xy.x)\cn.n
+-- Result >< \cn.c(\xy.x)((\ab.b)cn)
 --
 -- >>> parse listP "[0, 0]"
--- Result >< (\htcn.ch(tcn))(\fx.x)((\htcn.ch(tcn))(\fx.x)\cn.n)
+-- Result >< \cn.c(\fx.x)((\ab.a(\fx.x)((\de.e)ab))cn)
 --
 -- >>> parse listP "[0, 0"
 -- UnexpectedEof
 listP :: Parser Lambda
-listP = undefined
+listP = build <$> token listToken
 
+-- | Parses a list along with its operators
 -- >>> lamToBool <$> parse listOpP "head [True, False, True, False, False]"
 -- Result >< Just True
 --
@@ -198,9 +146,5 @@ listP = undefined
 -- >>> lamToBool <$> parse listOpP "isNull [1, 2, 3]"
 -- Result >< Just False
 listOpP :: Parser Lambda
-listOpP = undefined
+listOpP = build <$> token listExpression
 
-
--- | Exercise 2
-
--- | Implement your function(s) of choice below!
