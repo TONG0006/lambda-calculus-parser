@@ -3,9 +3,13 @@ import           AdditionalBuilder (ap3, ap4)
 import           Data.Builder      (Builder, ap, lam, term)
 import           LogicHelper       (falseChurchEncoding, trueChurchEncoding)
 
+-- | isNull = λl.l(λht.False) True
+isNullChurchEncoding :: Builder
+isNullChurchEncoding = lam 'p' $ ap3 (term 'p') (lam 'h' $ lam 't' falseChurchEncoding) trueChurchEncoding
+
 -- | [] = null = λcn.n
 nullBuilder :: Builder
-nullBuilder = lam 'c' $ lam 'n' $ term 'n'
+nullBuilder = lam 'x' trueChurchEncoding
 
 -- | isNull = λl.l(λht.False) True
 isNullBuilder :: Builder -> Builder

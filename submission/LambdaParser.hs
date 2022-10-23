@@ -5,6 +5,7 @@ import           ArithmeticParser    (arithmeticExpression,
 import           ComparatorParser    (comparatorExpression)
 import           Data.Builder        (build)
 import           Data.Lambda         (Lambda)
+import           FunctionParser      (functionExpression)
 import           LambdaBuilderParser (longLambdaExpression,
                                       shortLambdaExpression)
 import           ListParser          (listExpression, listToken)
@@ -14,8 +15,6 @@ import           Parser              (Parser)
 -- $setup
 -- >>> import Parser (parse)
 -- >>> import Data.Lambda (lamToBool, lamToInt, normal)
--- >>> import AdditionalBuilder (normalBuild)
--- >>> normalParse x y = normal <$> parse x y
 
 -- | Parses a string representing a lambda calculus expression in long form
 -- >>> parse longLambdaP "(λx.x)"
@@ -1057,3 +1056,7 @@ listP = build <$> betweenSpaces listToken
 -- Result >< Just True
 listOpP :: Parser Lambda
 listOpP = build <$> betweenSpaces listExpression
+
+-- | Parser for various features
+functionParser :: Parser Lambda
+functionParser = build <$> betweenSpaces functionExpression
