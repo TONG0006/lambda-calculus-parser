@@ -1,163 +1,104 @@
 module FunctionParser where
-import           AdditionalBuilder
-import           AdditionalParser
-import           ArithmeticParser
-import           Data.Builder
-import           FunctionHelper
-import           ListParser
-import           LogicBuilderParser
-import           Parser
-import           Prelude
-
-
--- $setup
--- >>> import AdditionalBuilder (normalBuild)
--- >>> import Data.Builder (build)
--- >>> import Data.Lambda (lamToInt, lamToBool, normal)
--- >>> import Parser (parse)
--- >>> import ArithmeticParser (intLambda)
--- >>> import AdditionalParser (chain)
--- >>> import ListHelper (isNullBuilder, headBuilder, tailBuilder)
+import           AdditionalBuilder  (ap3, ap4)
+import           AdditionalParser   (binaryToken, binaryToken1, bracket, chain,
+                                     ternaryToken1, token1, unaryToken1)
+import           ArithmeticParser   (arithmeticExpression, intLambda)
+import           Data.Builder       (Builder, ap)
+import           FunctionHelper     (appendBuilder, applyBuilder,
+                                     convertBuilder, factorialBuilder,
+                                     fibonacciBuilder, filterBuilder,
+                                     foldlBuilder, foldrBuilder, gcdBuilder,
+                                     indexBuilder, intDivBuilder, lastBuilder,
+                                     lenBuilder, mapBuilder, moduloBuilder,
+                                     rangeBuilder, truncateBuilder)
+import           ListParser         (listExpression, listPrecedence, listToken)
+import           LogicBuilderParser (logical)
+import           Parser             (Parser, (|||))
 
 -- | Fibonacci sequence, the good stuff
--- >>> lamToInt <$> normalBuild fibonacci "fib 1"
--- Result >< Just 1
--- >>> lamToInt <$> normalBuild fibonacci "fib 2"
--- Result >< Just 1
--- >>> lamToInt <$> normalBuild fibonacci "fib 3"
--- Result >< Just 2
--- >>> lamToInt <$> normalBuild fibonacci "fib 4"
--- Result >< Just 3
--- >>> lamToInt <$> normalBuild fibonacci "fib 5"
--- Result >< Just 5
--- >>> lamToInt <$> normalBuild fibonacci "fib 6"
--- Result >< Just 8
--- >>> lamToInt <$> normalBuild fibonacci "fib 7"
--- Result >< Just 13
--- >>> lamToInt <$> normalBuild fibonacci "fib 8"
--- Result >< Just 21
--- >>> lamToInt <$> normalBuild fibonacci "fib 9"
--- Result >< Just 34
--- >>> lamToInt <$> normalBuild fibonacci "fib 10"
--- Result >< Just 55
--- >>> lamToInt <$> normalBuild fibonacci "fib 5+6"
--- Result >< Just 89
--- >>> lamToInt <$> normalBuild fibonacci "fib (2**4-3**2-4)*2**2"
--- Result >< Just 144
 fibonacci :: Parser Builder
 fibonacci = unaryToken1 "fib" $ fibonacciBuilder <$> arithmeticExpression
 
 -- | Integer division
--- >>> lamToInt <$> normalBuild (chain intLambda intDiv) "4//2"
--- Result >< Just 2
--- >>> lamToInt <$> normalBuild (chain intLambda intDiv) "6//2"
--- Result >< Just 3
--- >>> lamToInt <$> normalBuild (chain intLambda intDiv) "9//3"
--- Result >< Just 3
--- >>> lamToInt <$> normalBuild (chain intLambda intDiv) "7//2"
--- Result >< Just 3
--- >>> lamToInt <$> normalBuild (chain intLambda intDiv) "5//2"
--- Result >< Just 2
--- >>> lamToInt <$> normalBuild (chain intLambda intDiv) "5 // 2"
--- Result >< Just 2
 intDiv :: Parser (Builder -> Builder -> Builder)
 intDiv = binaryToken "//" intDivBuilder
 
 -- | Modulo
--- >>> lamToInt <$> normalBuild (chain intLambda modulo) "4%2"
--- Result >< Just 0
--- >>> lamToInt <$> normalBuild (chain intLambda modulo) "6%2"
--- Result >< Just 0
--- >>> lamToInt <$> normalBuild (chain intLambda modulo) "9%3"
--- Result >< Just 0
--- >>> lamToInt <$> normalBuild (chain intLambda modulo) "7%2"
--- Result >< Just 1
--- >>> lamToInt <$> normalBuild (chain intLambda modulo) "5%2"
--- Result >< Just 1
--- >>> lamToInt <$> normalBuild (chain intLambda modulo) "5 % 2"
--- Result >< Just 1
--- >>> lamToInt <$> normalBuild (chain intLambda modulo) "9 % 5"
--- Result >< Just 4
 modulo :: Parser (Builder -> Builder -> Builder)
 modulo = binaryToken "%" moduloBuilder
 
 -- | Greatest Common Denominator (GCD)
--- >>> lamToInt <$> normalBuild (chain intLambda gcdLambda) "2 gcd 1"
--- Result >< Just 1
--- >>> lamToInt <$> normalBuild (chain intLambda gcdLambda) "4 gcd 2"
--- Result >< Just 2
--- >>> lamToInt <$> normalBuild (chain intLambda gcdLambda) "4 gcd 8"
--- Result >< Just 4
--- >>> lamToInt <$> normalBuild (chain intLambda gcdLambda) "12 gcd 3"
--- Result >< Just 3
--- >>> lamToInt <$> normalBuild (chain intLambda gcdLambda) "21 gcd 7"
--- Result >< Just 7
--- >>> lamToInt <$> normalBuild (chain intLambda gcdLambda) "23 gcd 7"
--- Result >< Just 1
 gcdLambda :: Parser (Builder -> Builder -> Builder)
 gcdLambda = binaryToken1 "gcd" $ ap3 gcdBuilder
 
 -- | Appends two lists together
--- >>> lamToBool . build . isNullBuilder <$> parse (chain listToken append) "[]++[]"
--- Result >< Just True
--- >>> lamToInt . build .  headBuilder <$> parse (chain listToken append) "[]++[1]"
--- Result >< Just 1
--- >>> lamToInt . build .  headBuilder <$> parse (chain listToken append) "[]++[2]"
--- Result >< Just 2
--- >>> lamToInt . build .  headBuilder <$> parse (chain listToken append) "[3]++[1]"
--- Result >< Just 3
--- >>> lamToInt . build . headBuilder . tailBuilder . tailBuilder <$> parse (chain listToken append) "[3,7]++[2,1]"
--- Result >< Just 7
 append :: Parser (Builder -> Builder -> Builder)
 append = binaryToken "++" $ ap3 appendBuilder
 
+-- | Gets the length of a list
 len :: Parser Builder
 len = unaryToken1 "len" $ ap lenBuilder <$> listToken
 
+-- | Gets the item on an index of a list
 index :: Parser (Builder -> Builder -> Builder)
 index = binaryToken "->" indexBuilder
 
+-- | Gets the last item in the list
 lastToken :: Parser Builder
 lastToken = unaryToken1 "last" $ ap lastBuilder <$> listToken
 
+-- | Gets everything except the last item
 truncateToken :: Parser Builder
 truncateToken = unaryToken1 "truncate" $ ap truncateBuilder <$> listToken
 
+-- | Reverse the list
 reverseToken :: Parser Builder
 reverseToken = unaryToken1 "reverse" $ ap truncateBuilder <$> listToken
 
+-- | Generate a list from two numbers
 range :: Parser (Builder -> Builder -> Builder)
 range = binaryToken1 "range" rangeBuilder
 
+-- | Passes the elemnts of the list x to f
 apply :: Parser (Builder -> Builder -> Builder)
 apply = binaryToken1 "apply" $ ap3 applyBuilder
 
+-- | Maps each item in the list
 mapToken :: Parser (Builder -> Builder -> Builder)
 mapToken = binaryToken1 "map" $ ap3 mapBuilder
 
+-- | Filters the list by a boolean function
 filterToken :: Parser (Builder -> Builder -> Builder)
 filterToken = binaryToken1 "filter" $ ap3 filterBuilder
 
+-- | Folds the list from the left
 foldlToken :: Parser Builder
 foldlToken = ternaryToken1 (ap4 foldlBuilder) ("foldl", token1 functionExpression) ("=>", token1 functionExpression) ("->", listExpression)
 
+-- | Folds the list from the right
 foldrToken :: Parser Builder
 foldrToken = ternaryToken1 foldrBuilder ("foldr", token1 functionExpression) ("=>", token1 functionExpression) ("->", listExpression)
 
+-- | The factorial function
 factorial :: Parser Builder
 factorial = unaryToken1 "factorial" $ factorialBuilder <$> arithmeticExpression
 
+-- | Converts a natural number to a signed integer
 convert :: Parser Builder
 convert = unaryToken1 "convert" $ convertBuilder <$> arithmeticExpression
 
+-- | All the non-binary operators
 functionOperator :: Parser Builder
 functionOperator = fibonacci ||| len ||| lastToken ||| truncateToken ||| reverseToken ||| foldlToken ||| foldrToken ||| factorial ||| convert
 
+-- | Possible terms for functions
 functionTerm :: Parser Builder
 functionTerm = (listToken ||| intLambda ||| logical) ||| functionOperator ||| bracket functionExpression
 
+-- | Precedence of function
 functionPrecedence :: [Parser (Builder -> Builder -> Builder)]
-functionPrecedence = [intDiv, modulo, gcdLambda, append, index, mapToken, range, apply, mapToken, filterToken]
+functionPrecedence = listPrecedence ++ [intDiv, modulo, gcdLambda, append, index, mapToken, range, apply, mapToken, filterToken]
 
+-- | The final function expression
 functionExpression :: Parser Builder
 functionExpression = foldl chain functionTerm functionPrecedence

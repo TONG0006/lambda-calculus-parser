@@ -9,7 +9,7 @@ isNullChurchEncoding = lam 'p' $ ap3 (term 'p') (lam 'h' $ lam 't' falseChurchEn
 
 -- | [] = null = λcn.n
 nullBuilder :: Builder
-nullBuilder = lam 'x' trueChurchEncoding
+nullBuilder = lam 'c' $ lam 'n' $ term 'n'
 
 -- | isNull = λl.l(λht.False) True
 isNullBuilder :: Builder -> Builder
