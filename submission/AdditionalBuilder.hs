@@ -1,5 +1,5 @@
 module AdditionalBuilder where
-import           Data.Builder (Builder, ap, build)
+import           Data.Builder (Builder, ap, build, lam)
 import           Data.Lambda  (Lambda, normal)
 import           Parser       (Input, ParseResult, Parser, parse)
 
@@ -11,6 +11,7 @@ import           Parser       (Input, ParseResult, Parser, parse)
 -- >>> b = term 'b'
 -- >>> c = term 'c'
 -- >>> d = term 'd'
+-- >>> e = term 'e'
 
 -- | Concatenates 3 builders using ap
 -- >>> lam 'a' $ lam 'b' $ lam 'c' $ ap3 a b c
@@ -26,6 +27,23 @@ ap3 a b c = a `ap` b `ap` c
 ap4 :: Builder -> Builder -> Builder -> Builder -> Builder
 ap4 a b c d = a `ap` b `ap` c `ap` d
 
+-- | Concatenates 5 builders using ap
+-- >>> lam 'a' $ lam 'b' $ lam 'c' $ lam 'd' $ lam 'e' $ ap5 a b c d e
+-- \abcde.abcde
+ap5 :: Builder -> Builder -> Builder -> Builder -> Builder -> Builder
+ap5 a b c d e = a `ap` b `ap` c `ap` d `ap` e
+
+apReplicate2 :: Builder -> Builder
+apReplicate2 x = x `ap` x
+
 -- | A function that parses, builds and then normalises (debugging)
 normalBuild :: Parser Builder -> Input -> ParseResult Lambda
 normalBuild p str = normal . build <$> parse p str
+
+lamBuild :: String -> Builder -> Builder
+lamBuild [] _             = undefined
+lamBuild list body = foldl (flip lam) initial terms
+    where
+        vars = reverse list
+        terms = tail vars
+        initial = lam (head vars) body

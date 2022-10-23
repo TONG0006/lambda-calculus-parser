@@ -19,34 +19,34 @@ datatypeExpression :: Parser Builder
 datatypeExpression = comparatorExpression
 
 -- | Parses a list using conslist approach
--- >>> normalBuild consToken "[]"
+-- >>> normalBuild newListToken "[]"
 -- Result >< \cn.n
--- >>> normalBuild consToken "[1]"
+-- >>> normalBuild newListToken "[1]"
 -- Result >< \c.c\f.f
--- >>> normalBuild consToken "[1,2]"
+-- >>> normalBuild newListToken "[1,2]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))n)
--- >>> normalBuild consToken "[1,2,3]"
+-- >>> normalBuild newListToken "[1,2,3]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))(c(\fx.f(f(fx)))n))
--- >>> normalBuild consToken "[True]"
+-- >>> normalBuild newListToken "[True]"
 -- Result >< \c.c\xy.x
--- >>> normalBuild consToken "[True, True]"
+-- >>> normalBuild newListToken "[True, True]"
 -- Result >< \cn.c(\xy.x)(c(\xy.x)n)
--- >>> normalBuild consToken "[True, False, True]"
+-- >>> normalBuild newListToken "[True, False, True]"
 -- Result >< \cn.c(\xy.x)(c(\xy.y)(c(\xy.x)n))
--- >>> normalBuild consToken "[1, True, 2, False]"
+-- >>> normalBuild newListToken "[1, True, 2, False]"
 -- Result >< \cn.c(\f.f)(c(\xy.x)(c(\fx.f(fx))(c(\xy.y)n)))
--- >>> normalBuild consToken "[ 1, 2, 3]"
+-- >>> normalBuild newListToken "[ 1, 2, 3]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))(c(\fx.f(f(fx)))n))
--- >>> normalBuild consToken "[1 ,2 ,3 ]"
+-- >>> normalBuild newListToken "[1 ,2 ,3 ]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))(c(\fx.f(f(fx)))n))
--- >>> normalBuild consToken "[ 1 , 2 , 3 ]"
+-- >>> normalBuild newListToken "[ 1 , 2 , 3 ]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))(c(\fx.f(f(fx)))n))
--- >>> normalBuild consToken "[1,,3]"
+-- >>> normalBuild newListToken "[1,,3]"
 -- UnexpectedChar ','
--- >>> normalBuild consToken "[1,2,3"
+-- >>> normalBuild newListToken "[1,2,3"
 -- UnexpectedEof
-consToken :: Parser Builder
-consToken = foldr consBuilder nullBuilder <$> arrayToken (datatypeExpression ||| listExpression)
+newListToken :: Parser Builder
+newListToken = foldr consBuilder nullBuilder <$> arrayToken (datatypeExpression ||| listExpression)
 
 -- | Parses a head operation
 -- >>> lamToInt <$> normalBuild headToken "head [1]"
@@ -120,7 +120,7 @@ isNullToken = unaryToken1 "isNull" $ isNullBuilder <$> listToken
 
 -- | Token for parsing a list returning operation
 listToken :: Parser Builder
-listToken = tailToken ||| consToken ||| headToken
+listToken = tailToken ||| newListToken ||| headToken
 
 -- | Token for parsing an item returning operation
 listOperator :: Parser Builder

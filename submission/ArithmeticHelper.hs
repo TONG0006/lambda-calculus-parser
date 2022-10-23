@@ -1,5 +1,7 @@
 module ArithmeticHelper where
-import           Data.Builder (Builder, ap, lam, term)
+import           AdditionalBuilder (ap3)
+import           Data.Builder      (Builder, ap, lam, term)
+import           LogicHelper       (falseChurchEncoding, trueChurchEncoding)
 
 -- | Predecessor of a number, or in other words minus one (λnfx.n(λgh.h(gf))(λu.x)(λu.u))
 predChurchEncoding :: Builder
@@ -8,6 +10,10 @@ predChurchEncoding = lam 'n' $ lam 'f' $ lam 'x' $ term 'n' `ap` lam 'g' (lam 'h
 -- | Subtract two church-encoded number (λmn.(n pred)m)
 minusChurchEncoding :: Builder
 minusChurchEncoding = lam 'm' $ lam 'n' $ (term 'n' `ap` predChurchEncoding) `ap` term 'm'
+
+-- | Checks if value is zero
+isZeroChurchEncoding :: Builder
+isZeroChurchEncoding = lam 'n' $ ap3 (term 'n') (lam 'x' falseChurchEncoding) trueChurchEncoding
 
 -- | Add two church-encoded number (λmnfx.mf(nfx))
 addBuilder :: Builder -> Builder -> Builder
@@ -32,3 +38,7 @@ predBuilder n = lam 'f' $ lam 'x' $ n `ap` lam 'g' (lam 'h' $ term 'h' `ap` (ter
 -- | Subtract two church-encoded number (λmn.(n pred)m)
 minusBuilder :: Builder -> Builder -> Builder
 minusBuilder m n = (n `ap` predChurchEncoding) `ap` m
+
+-- | Checks if value is zero
+isZeroBuilder :: Builder -> Builder
+isZeroBuilder n = ap3 n (lam 'x' falseChurchEncoding) trueChurchEncoding
