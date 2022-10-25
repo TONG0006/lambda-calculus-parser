@@ -5,6 +5,7 @@ import           ArithmeticParser    (arithmeticExpression,
 import           ComparatorParser    (comparatorExpression)
 import           Data.Builder        (build)
 import           Data.Lambda         (Lambda)
+import           FunctionParser      (functionExpression)
 import           LambdaBuilderParser (longLambdaExpression,
                                       shortLambdaExpression)
 import           ListParser          (listExpression, listToken)
@@ -14,8 +15,6 @@ import           Parser              (Parser)
 -- $setup
 -- >>> import Parser (parse)
 -- >>> import Data.Lambda (lamToBool, lamToInt, normal)
--- >>> import AdditionalBuilder (normalBuild)
--- >>> normalParse x y = normal <$> parse x y
 
 -- | Parses a string representing a lambda calculus expression in long form
 -- >>> parse longLambdaP "(λx.x)"
@@ -1053,7 +1052,71 @@ listP = build <$> betweenSpaces listToken
 -- Result >< Just True
 -- >>> lamToBool <$>  parse listOpP "head [isNull [] and 2<3]"
 -- Result >< Just True
--- >>> lamToBool <$>  parse listOpP "head [2<3 and isNull []]"
--- Result >< Just True
 listOpP :: Parser Lambda
 listOpP = build <$> betweenSpaces listExpression
+
+-- | Parser for various features
+-- >>> lamToInt <$> parse functionParser "fib 1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse functionParser "fib 2"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse functionParser "fib 3"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse functionParser "fib 4"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse functionParser "fib 5"
+-- Result >< Just 5
+-- >>> lamToInt <$> parse functionParser "fib 6"
+-- Result >< Just 8
+-- >>> lamToInt <$> parse functionParser "fib 7"
+-- Result >< Just 13
+-- >>> lamToInt <$> parse functionParser "fib 8"
+-- Result >< Just 21
+-- >>> lamToInt <$> parse functionParser "fib 9"
+-- Result >< Just 34
+-- >>> lamToInt <$> parse functionParser "fib 10"
+-- Result >< Just 55
+-- >>> lamToInt <$> parse functionParser "fib 5+6"
+-- Result >< Just 89
+-- >>> lamToInt <$> parse functionParser "fib (2**4-3**2-4)*2**2"
+-- Result >< Just 144
+-- >>> lamToInt <$> parse functionParser "4//2"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse functionParser "6//2"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse functionParser "9//3"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse functionParser "7//2"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse functionParser "5//2"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse functionParser "5 // 2"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse functionParser "4%2"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse functionParser "6%2"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse functionParser "9%3"
+-- Result >< Just 0
+-- >>> lamToInt <$> parse functionParser "7%2"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse functionParser "5%2"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse functionParser "5 % 2"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse functionParser "9 % 5"
+-- Result >< Just 4
+-- >>> lamToInt <$> parse functionParser "2 gcd 1"
+-- Result >< Just 1
+-- >>> lamToInt <$> parse functionParser "4 gcd 2"
+-- Result >< Just 2
+-- >>> lamToInt <$> parse functionParser "4 gcd 8"
+-- Result >< Just 4
+-- >>> lamToInt <$> parse functionParser "12 gcd 3"
+-- Result >< Just 3
+-- >>> lamToInt <$> parse functionParser "21 gcd 7"
+-- Result >< Just 7
+-- >>> lamToInt <$> parse functionParser "23 gcd 7"
+-- Result >< Just 1
+functionParser :: Parser Lambda
+functionParser = build <$> betweenSpaces functionExpression
