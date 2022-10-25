@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
 module LogicBuilderParser where
 import           AdditionalParser (binaryToken1, bracket, chain, constToken,
                                    ternaryToken1, token1, unaryToken1)

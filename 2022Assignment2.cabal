@@ -31,8 +31,11 @@ library
       AdditionalParser
       ArithmeticHelper
       ArithmeticParser
+      Combinators
       ComparatorHelper
       ComparatorParser
+      FunctionHelper
+      FunctionParser
       LambdaBuilderParser
       LambdaHelper
       LambdaParser

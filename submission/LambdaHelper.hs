@@ -23,7 +23,7 @@ shortLambdaParameter = between lambdaToken dotToken (list1 charVariable)
 
 -- | List of valid variable chars
 validVariables :: [Char]
-validVariables = ['a'..'z']
+validVariables = '_':['a'..'z']
 
 -- | Parses a single variable
 -- >>> parse charVariable "x"

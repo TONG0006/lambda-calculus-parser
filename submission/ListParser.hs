@@ -1,10 +1,11 @@
 module ListParser where
-import           AdditionalParser   (arrayToken, chain, token, unaryToken1)
-import           ArithmeticParser   (intLambda)
+import           AdditionalParser   (arrayToken, chain, unaryToken1)
+import           ArithmeticParser   (arithmeticPrecedence)
+import           ComparatorParser   (comparatorExpression, comparatorPrecedence)
 import           Data.Builder       (Builder)
 import           ListHelper         (consBuilder, headBuilder, isNullBuilder,
                                      nullBuilder, tailBuilder)
-import           LogicBuilderParser (logicalTerm)
+import           LogicBuilderParser (logicalPrecedence)
 import           Parser             (Parser, (|||))
 
 -- $setup
@@ -14,38 +15,38 @@ import           Parser             (Parser, (|||))
 -- >>> import Parser (parse)
 
 -- | The possible datatypes implemented in lambda calculus
-datatypeTerm :: Parser Builder
-datatypeTerm = intLambda ||| logicalTerm
+datatypeExpression :: Parser Builder
+datatypeExpression = comparatorExpression
 
 -- | Parses a list using conslist approach
--- >>> normalBuild consToken "[]"
+-- >>> normalBuild newListToken "[]"
 -- Result >< \cn.n
--- >>> normalBuild consToken "[1]"
+-- >>> normalBuild newListToken "[1]"
 -- Result >< \c.c\f.f
--- >>> normalBuild consToken "[1,2]"
+-- >>> normalBuild newListToken "[1,2]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))n)
--- >>> normalBuild consToken "[1,2,3]"
+-- >>> normalBuild newListToken "[1,2,3]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))(c(\fx.f(f(fx)))n))
--- >>> normalBuild consToken "[True]"
+-- >>> normalBuild newListToken "[True]"
 -- Result >< \c.c\xy.x
--- >>> normalBuild consToken "[True, True]"
+-- >>> normalBuild newListToken "[True, True]"
 -- Result >< \cn.c(\xy.x)(c(\xy.x)n)
--- >>> normalBuild consToken "[True, False, True]"
+-- >>> normalBuild newListToken "[True, False, True]"
 -- Result >< \cn.c(\xy.x)(c(\xy.y)(c(\xy.x)n))
--- >>> normalBuild consToken "[1, True, 2, False]"
+-- >>> normalBuild newListToken "[1, True, 2, False]"
 -- Result >< \cn.c(\f.f)(c(\xy.x)(c(\fx.f(fx))(c(\xy.y)n)))
--- >>> normalBuild consToken "[ 1, 2, 3]"
+-- >>> normalBuild newListToken "[ 1, 2, 3]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))(c(\fx.f(f(fx)))n))
--- >>> normalBuild consToken "[1 ,2 ,3 ]"
+-- >>> normalBuild newListToken "[1 ,2 ,3 ]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))(c(\fx.f(f(fx)))n))
--- >>> normalBuild consToken "[ 1 , 2 , 3 ]"
+-- >>> normalBuild newListToken "[ 1 , 2 , 3 ]"
 -- Result >< \cn.c(\f.f)(c(\fx.f(fx))(c(\fx.f(f(fx)))n))
--- >>> normalBuild consToken "[1,,3]"
+-- >>> normalBuild newListToken "[1,,3]"
 -- UnexpectedChar ','
--- >>> normalBuild consToken "[1,2,3"
+-- >>> normalBuild newListToken "[1,2,3"
 -- UnexpectedEof
-consToken :: Parser Builder
-consToken = foldr consBuilder nullBuilder <$> arrayToken (token datatypeTerm)
+newListToken :: Parser Builder
+newListToken = foldr consBuilder nullBuilder <$> arrayToken (datatypeExpression ||| listExpression)
 
 -- | Parses a head operation
 -- >>> lamToInt <$> normalBuild headToken "head [1]"
@@ -119,15 +120,19 @@ isNullToken = unaryToken1 "isNull" $ isNullBuilder <$> listToken
 
 -- | Token for parsing a list returning operation
 listToken :: Parser Builder
-listToken = tailToken ||| consToken
+listToken = tailToken ||| newListToken ||| headToken
 
 -- | Token for parsing an item returning operation
 listOperator :: Parser Builder
-listOperator = listToken ||| headToken ||| isNullToken
+listOperator = listToken ||| headToken ||| isNullToken ||| datatypeExpression
+
+-- | Token for parsing a logical returning operation
+listLogical :: Parser Builder
+listLogical = isNullToken
 
 -- | precedence for binary operations (currently unused and kept for design)
 listPrecedence :: [Parser (Builder -> Builder -> Builder)]
-listPrecedence = []
+listPrecedence = arithmeticPrecedence ++ comparatorPrecedence ++ logicalPrecedence
 
 -- | Parses list expressions and their operations (refer to LambdaParser for test cases)
 listExpression :: Parser Builder

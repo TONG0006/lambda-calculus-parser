@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 
 module LambdaBuilderParser where
-import           AdditionalParser    (bracket)
+import           AdditionalParser    (betweenSpaces, bracket)
 import           Control.Applicative (Applicative (liftA2))
 import           Data.Builder        (Builder, ap, lam, term)
 import           LambdaHelper        (longLambdaParameter, shortLambdaParameter,
@@ -47,11 +47,11 @@ longLambda = liftA2 lam longLambdaParameter longLambdaExpression
 
 -- | Parses the terms possible inside a long lambda expression
 longLambdaTerms :: Parser Builder
-longLambdaTerms = variables ||| bracket variables ||| bracket longLambda
+longLambdaTerms = variables ||| bracket longLambda ||| bracket longLambdaExpression
 
 -- | Parses a chain of long lambda terms (refer to LambdaParser for test cases)
 longLambdaExpression :: Parser Builder
-longLambdaExpression = foldl1 ap <$> list1 longLambdaTerms
+longLambdaExpression = foldl1 ap <$> list1 (betweenSpaces longLambdaTerms)
 
 -- | Parses a single short lambda term similar to long lambda
 shortLambda :: Parser Builder
@@ -59,8 +59,8 @@ shortLambda = liftA2 (flip $ foldr lam) shortLambdaParameter shortLambdaExpressi
 
 -- | Parses the terms possible inside a short lambda expression
 shortLambdaTerms :: Parser Builder
-shortLambdaTerms = variables ||| bracket variables ||| shortLambda ||| bracket shortLambda
+shortLambdaTerms = variables ||| shortLambda ||| bracket shortLambdaExpression
 
 -- | Parses a chain of short lambda terms (refer to LambdaParser for test cases)
 shortLambdaExpression :: Parser Builder
-shortLambdaExpression = foldl1 ap <$> list1 shortLambdaTerms
+shortLambdaExpression = foldl1 ap <$> list1 (betweenSpaces shortLambdaTerms)
